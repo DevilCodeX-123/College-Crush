@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { io } from 'socket.io-client';
 import { SOCKET_URL } from '../config';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import api from '../lib/api';
 
 const socket = io(SOCKET_URL);
@@ -150,7 +150,7 @@ const AnonymousChat = () => {
                     // Update reveal status
                     const isUserA = m.userA?._id === currentUser?._id;
                     const imRevealed = isUserA ? m.revealedToA : m.revealedToB;
-                    const theyRevealed = isUserA ? m.revealedToB : m.revealedToA;
+
                     
                     setRevealed(imRevealed);
                     setRevealSuccess(m.revealedToA && m.revealedToB);

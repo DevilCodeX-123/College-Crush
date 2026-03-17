@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, MessageCircle, Send, Sparkles, ShieldAlert, Trash2, Smile, Zap, Flame, Ghost } from 'lucide-react';
+import { Heart, Send, Sparkles, ShieldAlert, Trash2, Smile, Zap, Flame, Ghost } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Textarea } from '../components/ui/textarea';
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../components/ui/card';
+import { Card, CardHeader, CardContent, CardFooter } from '../components/ui/card';
 import { useToast } from '../components/ui/use-toast';
 import { useAuth } from '../context/AuthContext';
 import api from '../lib/api';

@@ -77,7 +77,7 @@ const Login = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password" name="password" className="text-sm font-medium text-gray-300 ml-1">Password</Label>
+                <Label htmlFor="password" className="text-sm font-medium text-gray-300 ml-1">Password</Label>
                 <div className="relative">
                   <Input
                     id="password"
