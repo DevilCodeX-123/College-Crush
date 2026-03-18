@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { API_BASE_URL } from '../config';
 
 interface AuthContextType {
     user: any;
@@ -18,30 +19,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const fetchUser = async () => {
             const token = localStorage.getItem('token');
             const storedUser = localStorage.getItem('clgcrush_user');
-            
+
             if (token) {
                 try {
                     // Forcefully fetch latest profile to get role updates
-                    const res = await fetch('http://localhost:5000/api/users/profile', {
+                    const res = await fetch(`${API_BASE_URL}/users/profile`, {
                         headers: { Authorization: `Bearer ${token}` }
                     });
-                    
+
                     if (res.ok) {
                         const data = await res.json();
                         setUser(data);
                         localStorage.setItem('clgcrush_user', JSON.stringify({ ...data, token }));
                     } else if (storedUser) {
-                         setUser(JSON.parse(storedUser));
+                        setUser(JSON.parse(storedUser));
                     }
                 } catch (e) {
-                     if (storedUser) setUser(JSON.parse(storedUser));
+                    if (storedUser) setUser(JSON.parse(storedUser));
                 }
             } else if (storedUser) {
                 setUser(JSON.parse(storedUser));
             }
             setLoading(false);
         };
-        
+
         fetchUser();
     }, []);
 

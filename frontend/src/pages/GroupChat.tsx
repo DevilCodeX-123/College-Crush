@@ -1,8 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/input';
-import { Send, Users, Hash } from 'lucide-react';
+import { Send, Hash } from 'lucide-react';
 import { io } from 'socket.io-client';
 import { SOCKET_URL } from '../config';
 import api from '../lib/api';
@@ -98,11 +97,10 @@ const GroupChat = () => {
                                 setActiveRoom(room.name);
                                 setMessages([]);
                             }}
-                            className={`w-full flex items-center space-x-3 px-4 py-3 rounded-2xl transition-all ${
-                                activeRoom === room.name 
-                                ? 'bg-gradient-to-r from-blue-600/20 to-pink-600/20 text-white border border-white/10' 
-                                : 'text-gray-500 hover:text-white hover:bg-white/5'
-                            }`}
+                            className={`w-full flex items-center space-x-3 px-4 py-3 rounded-2xl transition-all ${activeRoom === room.name
+                                    ? 'bg-gradient-to-r from-blue-600/20 to-pink-600/20 text-white border border-white/10'
+                                    : 'text-gray-500 hover:text-white hover:bg-white/5'
+                                }`}
                         >
                             <Hash className="w-4 h-4" />
                             <span className="font-medium text-sm">{room.name}</span>
@@ -138,11 +136,10 @@ const GroupChat = () => {
                         return (
                             <div key={i} className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}>
                                 <p className="text-[10px] text-gray-600 mb-1 px-2 font-bold uppercase tracking-widest">{isOwn ? 'You' : senderName}</p>
-                                <div className={`max-w-[75%] p-4 rounded-3xl shadow-xl ${
-                                    isOwn 
-                                    ? 'bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-tr-none' 
-                                    : 'bg-white/5 border border-white/10 text-gray-200 rounded-tl-none'
-                                }`}>
+                                <div className={`max-w-[75%] p-4 rounded-3xl shadow-xl ${isOwn
+                                        ? 'bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-tr-none'
+                                        : 'bg-white/5 border border-white/10 text-gray-200 rounded-tl-none'
+                                    }`}>
                                     <p className="text-sm font-light leading-relaxed">{msg.content}</p>
                                 </div>
                             </div>
@@ -153,14 +150,14 @@ const GroupChat = () => {
 
                 <footer className="p-6 bg-[#0a0a0c]">
                     <div className="relative">
-                        <Input 
+                        <Input
                             value={message}
                             onChange={(e) => setMessage(e.target.value)}
                             onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
                             placeholder={`Message #${activeRoom}`}
                             className="bg-white/5 border-white/10 h-14 pl-6 pr-16 rounded-2xl focus:ring-pink-500/20"
                         />
-                        <button 
+                        <button
                             onClick={sendMessage}
                             className="absolute right-2 top-2 w-10 h-10 bg-gradient-to-br from-blue-500 to-pink-500 rounded-xl flex items-center justify-center hover:scale-105 transition-transform"
                         >

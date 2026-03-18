@@ -29,7 +29,7 @@ const Leaderboard = () => {
         <div className="p-8 max-w-4xl mx-auto space-y-12">
             <header className="flex justify-between items-end">
                 <div>
-                   <h1 className="text-4xl font-black mb-2 flex items-center">
+                    <h1 className="text-4xl font-black mb-2 flex items-center">
                         <Award className="w-10 h-10 mr-4 text-yellow-500" />
                         Campus Elite
                     </h1>
@@ -46,18 +46,18 @@ const Leaderboard = () => {
                 <div className="grid grid-cols-3 gap-8 items-end mb-12">
                     {/* Rank 2 */}
                     {topUsers[1] && (
-                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} delay={0.1}>
-                           <Card className="border-white/10 bg-white/5 backdrop-blur-xl rounded-[2.5rem] p-8 text-center relative overflow-hidden group hover:border-blue-500/30 transition-all">
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+                            <Card className="border-white/10 bg-white/5 backdrop-blur-xl rounded-[2.5rem] p-8 text-center relative overflow-hidden group hover:border-blue-500/30 transition-all">
                                 <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 blur-3xl"></div>
                                 <div className="text-2xl font-black text-gray-500 mb-4">#2</div>
                                 <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-white/10 p-[1px] mx-auto mb-4">
-                                     <div className="w-full h-full rounded-[15px] bg-[#0a0a0c] flex items-center justify-center overflow-hidden">
+                                    <div className="w-full h-full rounded-[15px] bg-[#0a0a0c] flex items-center justify-center overflow-hidden">
                                         <img src={topUsers[1].profilePhoto} alt="" />
                                     </div>
                                 </div>
                                 <h4 className="font-bold mb-1">{topUsers[1].name}</h4>
                                 <p className="text-[10px] text-blue-400 font-black uppercase tracking-widest">{topUsers[1].visitCount} Visits</p>
-                           </Card>
+                            </Card>
                         </motion.div>
                     )}
 
@@ -67,7 +67,7 @@ const Leaderboard = () => {
                             <Card className="border-pink-500/30 bg-gradient-to-b from-pink-500/[0.08] to-white/5 backdrop-blur-2xl rounded-[3rem] p-10 text-center relative overflow-hidden ring-4 ring-pink-500/10 scale-110">
                                 <Crown className="w-10 h-10 text-yellow-500 mx-auto mb-4 drop-shadow-[0_0_15px_rgba(234,179,8,0.5)]" />
                                 <div className="w-24 h-24 rounded-[2rem] bg-gradient-to-br from-pink-500 to-white/10 p-[2px] mx-auto mb-6">
-                                     <div className="w-full h-full rounded-[30px] bg-[#0a0a0c] flex items-center justify-center overflow-hidden">
+                                    <div className="w-full h-full rounded-[30px] bg-[#0a0a0c] flex items-center justify-center overflow-hidden">
                                         <img src={topUsers[0].profilePhoto} alt="" />
                                     </div>
                                 </div>
@@ -80,18 +80,18 @@ const Leaderboard = () => {
 
                     {/* Rank 3 */}
                     {topUsers[2] && (
-                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} delay={0.2}>
-                           <Card className="border-white/10 bg-white/5 backdrop-blur-xl rounded-[2.5rem] p-8 text-center relative overflow-hidden group hover:border-purple-500/30 transition-all">
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+                            <Card className="border-white/10 bg-white/5 backdrop-blur-xl rounded-[2.5rem] p-8 text-center relative overflow-hidden group hover:border-purple-500/30 transition-all">
                                 <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/5 blur-3xl"></div>
                                 <div className="text-2xl font-black text-gray-500 mb-4">#3</div>
                                 <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-500 to-white/10 p-[1px] mx-auto mb-4">
-                                     <div className="w-full h-full rounded-[15px] bg-[#0a0a0c] flex items-center justify-center overflow-hidden">
+                                    <div className="w-full h-full rounded-[15px] bg-[#0a0a0c] flex items-center justify-center overflow-hidden">
                                         <img src={topUsers[2].profilePhoto} alt="" />
                                     </div>
                                 </div>
                                 <h4 className="font-bold mb-1">{topUsers[2].name}</h4>
                                 <p className="text-[10px] text-purple-400 font-black uppercase tracking-widest">{topUsers[2].visitCount} Visits</p>
-                           </Card>
+                            </Card>
                         </motion.div>
                     )}
                 </div>
@@ -99,10 +99,10 @@ const Leaderboard = () => {
                 {/* Remaining List */}
                 <div className="space-y-4">
                     {topUsers.slice(3).map((u, i) => (
-                        <motion.div key={u._id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} delay={(i+4) * 0.05}>
+                        <motion.div key={u._id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: (i + 4) * 0.05 }}>
                             <Card className="border-white/5 bg-white/[0.02] hover:bg-white/[0.04] transition-all rounded-3xl p-4 flex items-center justify-between group">
                                 <div className="flex items-center space-x-6">
-                                    <span className="w-8 text-center font-black text-gray-600 group-hover:text-white transition-colors">#{i+4}</span>
+                                    <span className="w-8 text-center font-black text-gray-600 group-hover:text-white transition-colors">#{i + 4}</span>
                                     <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center overflow-hidden border border-white/10 group-hover:border-white/20">
                                         <img src={u.profilePhoto} alt="" />
                                     </div>

@@ -7,7 +7,8 @@
     "install-all": "npm install && cd frontend && npm install && cd ../backend && npm install",
     "dev-frontend": "cd frontend && npm run dev",
     "dev-backend": "cd backend && npm run dev",
-    "dev": "concurrently \"npm run dev-frontend\" \"npm run dev-backend\""
+    "dev": "concurrently \"npm run dev-frontend\" \"npm run dev-backend\"",
+    "build": "cd frontend && npm install && npm run build && node -e \"const fs=require('fs'); fs.rmSync('../public', {recursive:true, force:true}); fs.renameSync('dist', '../public');\""
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
