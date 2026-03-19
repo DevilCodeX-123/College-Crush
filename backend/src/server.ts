@@ -12,12 +12,14 @@ import messageRoutes from './routes/messageRoutes.js';
 import systemRoutes from './routes/systemRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import Message from './models/Message.js';
+import User from './models/User.js';
+import jwt from 'jsonwebtoken';
 
 dotenv.config({ path: '../.env' });
 
 const app = express();
 const httpServer = createServer(app);
-const io = new Server(httpServer, {
+export const io = new Server(httpServer, {
   cors: {
     origin: '*',
     methods: ['GET', 'POST']
@@ -45,9 +47,30 @@ app.get('/', (req: express.Request, res: express.Response) => {
   res.send('ClgCrush API is running...');
 });
 
+// Socket.io Middleware for Authentication
+io.use(async (socket, next) => {
+  const token = socket.handshake.auth.token || socket.handshake.headers.token;
+  if (!token) return next(new Error('Authentication error'));
+
+  try {
+    const decoded: any = jwt.verify(token, process.env.JWT_SECRET as string);
+    (socket as any).userId = decoded.id;
+    next();
+  } catch (err) {
+    next(new Error('Authentication error'));
+  }
+});
+
 // Socket.io Connection
-io.on('connection', (socket) => {
-  console.log('A user connected:', socket.id);
+io.on('connection', async (socket) => {
+  const userId = (socket as any).userId;
+  console.log('User connected:', userId);
+
+  // Update status to Online
+  if (userId) {
+    await User.findByIdAndUpdate(userId, { onlineStatus: 'Online' });
+    socket.join(`user_${userId}`);
+  }
 
   socket.on('join_room', (roomId) => {
     socket.join(roomId);
@@ -78,8 +101,11 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
+  socket.on('disconnect', async () => {
+    console.log('User disconnected:', userId);
+    if (userId) {
+      await User.findByIdAndUpdate(userId, { onlineStatus: 'Offline' });
+    }
   });
 });
 

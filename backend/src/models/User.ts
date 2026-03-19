@@ -25,7 +25,9 @@ const userSchema = new mongoose.Schema({
     banExpiry: { type: Date },
     warnings: { type: Number, default: 0 },
     isMuted: { type: Boolean, default: false },
-    muteExpiry: { type: Date }
+    muteExpiry: { type: Date },
+    recentMatches: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    onlineStatus: { type: String, enum: ['Online', 'Offline'], default: 'Offline' }
 }, {
     timestamps: true
 });

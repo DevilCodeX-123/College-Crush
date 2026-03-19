@@ -16,6 +16,7 @@ import {
     getGroupJoinRequests,
     handleJoinRequestDecision,
     leaveGroup,
+    disconnectMatch,
 } from '../controllers/chatController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
@@ -24,6 +25,7 @@ const router = express.Router();
 
 router.post('/match', protect, findMatch as any);
 router.get('/match/:id', protect, getMatchStatus as any);
+router.post('/match/disconnect', protect, disconnectMatch as any);
 router.put('/reveal/:id', protect, revealIdentity as any);
 router.get('/groups', protect, getGroups as any);
 router.get('/friends', protect, getFriends as any);

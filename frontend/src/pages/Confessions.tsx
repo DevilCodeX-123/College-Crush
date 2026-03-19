@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Send, Sparkles, ShieldAlert, Trash2, Smile, Zap, Flame, Ghost } from 'lucide-react';
+import { Heart, Send, Sparkles, ShieldAlert, Smile, Zap, Flame, Ghost } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Textarea } from '../components/ui/textarea';
 import { Card, CardHeader, CardContent, CardFooter } from '../components/ui/card';
@@ -69,22 +69,6 @@ const Confessions = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    try {
-      await api.delete(`/confessions/${id}`);
-      toast({
-        title: "Confession Removed",
-        description: "It's gone from the wall.",
-      });
-      fetchConfessions();
-    } catch (err) {
-      toast({
-        title: "Error",
-        description: "Failed to delete confession.",
-        variant: "destructive",
-      });
-    }
-  };
 
   const handleReport = async (id: string) => {
     const reason = window.prompt("Why are you reporting this confession?");
@@ -197,16 +181,6 @@ const Confessions = () => {
                       </div>
 
                       <div className="flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {(user?._id === confession.author || user?.role === 'admin') && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDelete(confession._id)}
-                            className="text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded-full"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        )}
                         <Button
                           variant="ghost"
                           size="icon"

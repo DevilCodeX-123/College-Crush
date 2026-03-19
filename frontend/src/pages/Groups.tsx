@@ -18,7 +18,7 @@ const Groups = () => {
     const [newGroup, setNewGroup] = useState({ name: '', description: '', type: 'public' });
     const [requestSent, setRequestSent] = useState<string | null>(null);
 
-    const { data: groups, isLoading } = useQuery({
+    const { data: groups, isLoading, refetch } = useQuery({
         queryKey: ['groups'],
         queryFn: async () => {
             const { data } = await api.get('/chat/groups');
@@ -41,9 +41,18 @@ const Groups = () => {
         mutationFn: async (groupId: string) => {
             return api.post(`/chat/groups/join/${groupId}`);
         },
-        onSuccess: (_data, groupId) => {
-            setRequestSent(groupId);
-            setTimeout(() => setRequestSent(null), 3000);
+        onSuccess: (data: any, groupId) => {
+            if (data.data?.message?.includes('successfully')) {
+                // For public groups joined immediately
+                refetch();
+            } else {
+                setRequestSent(groupId);
+                setTimeout(() => setRequestSent(null), 3000);
+            }
+        },
+        onError: (error: any) => {
+            const message = error.response?.data?.message || 'Error joining hub';
+            alert(message);
         }
     });
 
@@ -168,17 +177,15 @@ const Groups = () => {
                                                 ) : (
                                                     <Button
                                                         variant="ghost"
-                                                        onClick={async () => {
-                                                            try {
-                                                                await api.post(`/chat/groups/join/${group._id}`);
-                                                                navigate(`/groups`);
-                                                            } catch (e) {
-                                                                alert('Error joining public hub');
-                                                            }
-                                                        }}
+                                                        disabled={joinRequestMutation.isPending}
+                                                        onClick={() => joinRequestMutation.mutate(group._id)}
                                                         className="group-hover:translate-x-1 transition-transform p-0 hover:bg-transparent"
                                                     >
-                                                        <Plus className="w-6 h-6 text-white" />
+                                                        {joinRequestMutation.isPending && joinRequestMutation.variables === group._id ? (
+                                                            <Loader2 className="w-6 h-6 animate-spin text-white" />
+                                                        ) : (
+                                                            <Plus className="w-6 h-6 text-white" />
+                                                        )}
                                                     </Button>
                                                 )}
                                             </div>

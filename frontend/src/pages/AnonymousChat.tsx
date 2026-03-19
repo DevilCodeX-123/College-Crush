@@ -10,12 +10,18 @@ import { io } from 'socket.io-client';
 import { SOCKET_URL } from '../config';
 import { useQuery } from '@tanstack/react-query';
 import api from '../lib/api';
+import { useToast } from '../components/ui/use-toast';
 
-const socket = io(SOCKET_URL);
+const socket = io(SOCKET_URL, {
+    auth: {
+        token: localStorage.getItem('token')
+    }
+});
 
 const AnonymousChat = () => {
     const { user: currentUser } = useAuth();
     const navigate = useNavigate();
+    const { toast } = useToast();
     const [isMatching, setIsMatching] = useState(false);
     const [match, setMatch] = useState<any>(null);
     const [interests, setInterests] = useState<string[]>([]);
@@ -36,10 +42,18 @@ const AnonymousChat = () => {
             const { data } = await api.post('/chat/match', { interests });
             setMatch(data);
             setIsMatching(false);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Matching failed', error);
             setIsMatching(false);
-            alert('No one is online right now. Try again in a bit! ✨');
+            const message = error.response?.status === 404 
+                ? 'No one is online right now. Try again in a bit! ✨' 
+                : 'Something went wrong. Please try again.';
+            
+            toast({
+                title: "Match Search Ended",
+                description: message,
+                variant: "destructive"
+            });
         }
     };
 
@@ -57,18 +71,44 @@ const AnonymousChat = () => {
         if (match?.matchId) {
             socket.emit('join_room', match.matchId);
 
-            socket.on('receive_message', (data) => {
-                if (data.room === match.matchId) {
-                    refetchMessages();
+            socket.on('match_disconnected', (data) => {
+                if (data.matchId === match.matchId) {
+                    setMatch(null);
+                    setRevealed(false);
+                    setRevealSuccess(false);
+                    setFriendRequestStatus('none');
+                    toast({
+                        title: "Partner Disconnected",
+                        description: "The session has ended. Find a new soul to jam with! ✨",
+                        variant: "default"
+                    });
                 }
             });
 
+            socket.on('match_request', (data) => {
+                setMatch(data);
+                toast({
+                    title: "Soul Connected! ✨",
+                    description: "You've been matched with an anonymous soul.",
+                });
+            });
+
+            // Handle browser/tab close
+            const handleBeforeUnload = () => {
+                api.post('/chat/match/disconnect').catch(() => {});
+            };
+            window.addEventListener('beforeunload', handleBeforeUnload);
+
             return () => {
+                window.removeEventListener('beforeunload', handleBeforeUnload);
+                // Call disconnect API when leaving page or ending match
+                api.post('/chat/match/disconnect').catch(() => {});
                 socket.emit('leave_room', match.matchId);
                 socket.off('receive_message');
+                socket.off('match_disconnected');
             };
         }
-    }, [match?.matchId, refetchMessages]);
+    }, [match?.matchId, refetchMessages, toast]);
 
     const handleSend = async () => {
         if (!messageInput.trim() || !match?.matchId) return;
@@ -303,7 +343,10 @@ const AnonymousChat = () => {
                                     {match && (
                                         <div className="flex gap-4">
                                             <Button
-                                                onClick={() => setMatch(null)}
+                                                onClick={async () => {
+                                                    await api.post('/chat/match/disconnect');
+                                                    setMatch(null);
+                                                }}
                                                 className="h-14 w-14 rounded-2xl bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/20 shadow-xl"
                                             >
                                                 <Zap className="w-5 h-5 rotate-180" />

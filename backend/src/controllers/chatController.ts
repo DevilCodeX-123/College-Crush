@@ -3,6 +3,8 @@ import User from '../models/User.js';
 import Friendship from '../models/Friendship.js';
 import Group from '../models/Group.js';
 import GroupRequest from '../models/GroupRequest.js';
+import Message from '../models/Message.js';
+import { io } from '../server.js';
 
 // @desc    Find an anonymous match based on interests
 // @route   POST /api/chat/match
@@ -15,38 +17,52 @@ export const findMatch = async (req: any, res: Response) => {
         const { interests } = req.body;
         const interestList = interests && interests.length > 0 ? interests : user.interests;
 
+        // Exclude recent matches and ensure they are not matching the same person
+        const excludedIds = [user._id, ...(user.recentMatches || [])];
+        
+        const genderPreference = { $ne: user.gender }; // Define genderPreference for opposite gender matching
+
         let match: any = null;
 
-        // TIER 1: Common Interests + Opposite Gender
+        // TIER 1: Exact Interest Match + Gender Pref
         match = await User.findOne({
-            _id: { $ne: user._id },
-            interests: { $in: interestList },
-            gender: { $ne: user.gender },
+            _id: { $nin: excludedIds },
+            gender: genderPreference,
+            interests: { $in: user.interests },
             onlineStatus: 'Online'
         });
 
-        // TIER 2: Common Interests + Any Gender
+        // TIER 2: Any Interest Match
         if (!match) {
             match = await User.findOne({
-                _id: { $ne: user._id },
-                interests: { $in: interestList },
+                _id: { $nin: excludedIds },
+                interests: { $in: user.interests },
                 onlineStatus: 'Online'
             });
         }
 
-        // TIER 3: Random Opposite Gender
+        // TIER 3: Gender Preference Match
         if (!match) {
             match = await User.findOne({
-                _id: { $ne: user._id },
-                gender: { $ne: user.gender },
+                _id: { $nin: excludedIds },
+                gender: genderPreference,
                 onlineStatus: 'Online'
             });
         }
 
-        // TIER 4: Random Any Gender (Fallback)
+        // TIER 4: Random Any Gender (Fallback - Still Online Only)
         if (!match) {
             match = await User.findOne({
-                _id: { $ne: user._id }
+                _id: { $nin: excludedIds },
+                onlineStatus: 'Online'
+            });
+        }
+
+        // TIER 5: Last Resort (Match anyone online except self)
+        if (!match) {
+            match = await User.findOne({
+                _id: { $ne: user._id },
+                onlineStatus: 'Online'
             });
         }
 
@@ -57,7 +73,7 @@ export const findMatch = async (req: any, res: Response) => {
         // Use the interests provided in the request or from user profile
         const common = interestList.filter((i: string) => match.interests.includes(i));
 
-        // Create a pending friendship
+        // Create a pending friendship or update existing one
         const friendship = await Friendship.findOneAndUpdate(
             {
                 $or: [
@@ -69,10 +85,36 @@ export const findMatch = async (req: any, res: Response) => {
                 userA: user._id,
                 userB: match._id,
                 status: 'matched',
-                commonInterests: common
+                commonInterests: common,
+                revealedToA: false,
+                revealedToB: false
             },
             { upsert: true, new: true }
         );
+
+        // Update recent matches for both users
+        const updateRecentMatches = async (uId: any, mId: any) => {
+            const u = await User.findById(uId);
+            if (u) {
+                let currentRecent = (u.recentMatches as any[]) || [];
+                // Remove if already exists to move to front, although nin should have caught it
+                const mIdStr = mId.toString();
+                currentRecent = currentRecent.filter(id => id.toString() !== mIdStr);
+                currentRecent.unshift(mId as any);
+                u.recentMatches = currentRecent.slice(0, 3);
+                await u.save();
+            }
+        };
+
+        await updateRecentMatches(user._id as any, match._id as any);
+        await updateRecentMatches(match._id as any, user._id as any);
+
+        // Notify the matched user if they are online
+        io.to(`user_${match._id}`).emit('match_request', {
+            matchId: friendship._id,
+            gender: user.gender,
+            commonInterests: common
+        });
 
         res.json({
             matchId: friendship._id,
@@ -244,6 +286,39 @@ export const getFriends = async (req: any, res: Response) => {
     }
 };
 
+// @desc    Disconnect/End a match session
+// @route   POST /api/chat/match/disconnect
+// @access  Private
+export const disconnectMatch = async (req: any, res: Response) => {
+    try {
+        const friendship = await Friendship.findOne({
+            $or: [{ userA: req.user._id }, { userB: req.user._id }],
+            status: { $in: ['matched', 'requesting_friendship'] }
+        });
+
+        if (friendship) {
+            const matchId = friendship._id.toString();
+            
+            // Delete all messages associated with the match
+            await Message.deleteMany({ room: matchId });
+            
+            await Friendship.findByIdAndDelete(friendship._id);
+            
+            // Notify the other user via socket
+            io.to(matchId).emit('match_disconnected', {
+                message: 'Your partner has disconnected.',
+                matchId
+            });
+            
+            res.json({ message: 'Match disconnected' });
+        } else {
+            res.status(404).json({ message: 'No active match found' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Error disconnecting match' });
+    }
+};
+
 // @desc    Remove/Disconnect friend or match
 // @route   DELETE /api/chat/remove-friend/:id
 // @access  Private
@@ -284,6 +359,16 @@ export const requestJoinGroup = async (req: any, res: Response) => {
     try {
         const group = await Group.findById(req.params.id);
         if (!group) return res.status(404).json({ message: 'Group not found' });
+
+        // Check if group is public. If so, join immediately.
+        if (group.type === 'public') {
+            const userIdStr = req.user._id.toString();
+            if (!group.members.some(m => m.toString() === userIdStr)) {
+                group.members.push(req.user._id);
+                await group.save();
+            }
+            return res.json({ message: 'Joined public group successfully', group });
+        }
 
         const existingRequest = await GroupRequest.findOne({
             requester: req.user._id,

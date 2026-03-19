@@ -102,9 +102,9 @@ export const deleteConfession = async (req: CustomRequest, res: Response) => {
             return res.status(404).json({ message: 'Confession not found' });
         }
 
-        // Only author or admin can delete
-        if (confession.author.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
-            return res.status(401).json({ message: 'Not authorized to delete this confession' });
+        // Only admin can delete
+        if (req.user.role !== 'admin') {
+            return res.status(401).json({ message: 'Not authorized. Only admins can delete confessions.' });
         }
 
         await Confession.findByIdAndDelete(req.params.id);
