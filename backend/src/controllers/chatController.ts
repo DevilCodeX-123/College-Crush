@@ -53,7 +53,7 @@ export const findMatch = async (req: any, res: Response) => {
         if (!match) {
             return res.status(404).json({ message: 'No users available for matching' });
         }
-        
+
         // Use the interests provided in the request or from user profile
         const common = interestList.filter((i: string) => match.interests.includes(i));
 
@@ -168,11 +168,11 @@ export const getMatchStatus = async (req: any, res: Response) => {
     try {
         const friendship = await Friendship.findById(req.params.id)
             .populate('userA userB', 'name profilePhoto onlineStatus');
-            
+
         if (!friendship) return res.status(404).json({ message: 'Match not found' });
-        
+
         // Basic security check: user must be part of the match
-        if (friendship.userA._id.toString() !== req.user._id.toString() && 
+        if (friendship.userA._id.toString() !== req.user._id.toString() &&
             friendship.userB._id.toString() !== req.user._id.toString()) {
             return res.status(403).json({ message: 'Unauthorized' });
         }
@@ -220,7 +220,7 @@ export const getFriends = async (req: any, res: Response) => {
             $or: [{ userA: req.user._id }, { userB: req.user._id }],
             status: { $in: ['matched', 'requesting_friendship', 'friends'] }
         }).populate('userA userB', 'name profilePhoto onlineStatus');
-        
+
         const friendsData = friends.map(f => {
             const isUserA = f.userA._id.toString() === req.user._id.toString();
             const friend: any = isUserA ? f.userB : f.userA;
@@ -237,7 +237,7 @@ export const getFriends = async (req: any, res: Response) => {
                 isRevealed: isRevealed
             };
         });
-        
+
         res.json(friendsData);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching friends' });
@@ -253,7 +253,7 @@ export const removeFriend = async (req: any, res: Response) => {
         if (!friendship) return res.status(404).json({ message: 'Friendship not found' });
 
         // Basic security check: user must be part of the friendship
-        if (friendship.userA.toString() !== req.user._id.toString() && 
+        if (friendship.userA.toString() !== req.user._id.toString() &&
             friendship.userB.toString() !== req.user._id.toString()) {
             return res.status(403).json({ message: 'Unauthorized' });
         }
@@ -313,7 +313,7 @@ export const requestJoinGroup = async (req: any, res: Response) => {
 export const requestCreateGroup = async (req: any, res: Response) => {
     try {
         const { name, description, type } = req.body;
-        
+
         const request = await GroupRequest.create({
             requester: req.user._id,
             type: 'create',
@@ -372,5 +372,100 @@ export const handleRequestDecision = async (req: any, res: Response) => {
         res.json(request);
     } catch (error) {
         res.status(500).json({ message: 'Error handling request decision' });
+    }
+};
+
+// @desc    Get pending join requests for a specific group (Room Admin only)
+// @route   GET /api/chat/groups/:id/requests
+// @access  Private
+export const getGroupJoinRequests = async (req: any, res: Response) => {
+    try {
+        const group = await Group.findById(req.params.id);
+        if (!group) return res.status(404).json({ message: 'Group not found' });
+
+        // Check if user is room admin
+        if (group.admin.toString() !== req.user._id.toString()) {
+            res.status(403).json({ message: 'Only room admin can view join requests' });
+            return;
+        }
+
+        const requests = await GroupRequest.find({ group: group._id, type: 'join', status: 'pending' })
+            .populate('requester', 'name email profilePhoto year branch');
+
+        res.json(requests);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching join requests' });
+    }
+};
+
+// @desc    Approve or Reject a join request (Room Admin only)
+// @route   PUT /api/chat/groups/requests/:requestId/decision
+// @access  Private
+export const handleJoinRequestDecision = async (req: any, res: Response) => {
+    try {
+        const { status } = req.body; // 'approved' or 'rejected'
+        const request = await GroupRequest.findById(req.params.requestId).populate('group');
+
+        if (!request || request.type !== 'join') return res.status(404).json({ message: 'Join request not found' });
+
+        const group = await Group.findById(request.group);
+        if (!group) return res.status(404).json({ message: 'Group not found' });
+
+        if (group.admin.toString() !== req.user._id.toString()) {
+            res.status(403).json({ message: 'Only room admin can make this decision' });
+            return;
+        }
+
+        request.status = status;
+        await request.save();
+
+        if (status === 'approved') {
+            if (!group.members.includes(request.requester)) {
+                group.members.push(request.requester);
+                await group.save();
+            }
+        }
+
+        res.json({ message: `Request ${status} successfully`, request });
+    } catch (error) {
+        res.status(500).json({ message: 'Error processing decision' });
+    }
+};
+
+// @desc    Leave a group
+// @route   POST /api/chat/groups/:id/leave
+// @access  Private
+export const leaveGroup = async (req: any, res: Response) => {
+    try {
+        const group = await Group.findById(req.params.id);
+        if (!group) return res.status(404).json({ message: 'Group not found' });
+
+        const userIdStr = req.user._id.toString();
+
+        // Check if member
+        if (!group.members.some(m => m.toString() === userIdStr)) {
+            return res.status(400).json({ message: 'You are not a member of this group' });
+        }
+
+        // Remove member
+        group.members = group.members.filter(m => m.toString() !== userIdStr);
+
+        // If no members left, delete the group entirely
+        if (group.members.length === 0) {
+            await Group.findByIdAndDelete(group._id);
+            // Optionally clean up requests and messages here later
+            return res.json({ message: 'Group left and deleted because you were the last member' });
+        }
+
+        // If the user leaving is the admin, assign the next existing member as admin
+        if (group.admin.toString() === userIdStr) {
+            group.admin = group.members[0];
+        }
+
+        await group.save();
+        res.json({ message: 'Successfully left the group', group });
+
+    } catch (error) {
+        res.status(500).json({ message: 'Error leaving group' });
     }
 };

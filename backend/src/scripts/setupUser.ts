@@ -7,11 +7,11 @@ dotenv.config({ path: '../.env' });
 const setupUser = async () => {
     try {
         await mongoose.connect(process.env.MONGODB_URI as string);
-        const email = 'abc@gmail.com';
+        const email = 'devilboss@gmail.com';
         const password = 'password123';
-        
+
         let user = await User.findOne({ email });
-        
+
         if (user) {
             user.password = password;
             user.role = 'admin'; // FORCE ADMIN

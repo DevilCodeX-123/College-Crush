@@ -33,7 +33,7 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
   if (loading) return <div>Loading...</div>;
   if (!user || user.role !== 'admin') return <Navigate to="/dashboard" />;
-  return <>{children}</>;
+  return <Layout>{children}</Layout>;
 };
 
 function App() {
@@ -46,93 +46,125 @@ function App() {
               <Route path="/" element={<LandingPage />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
-              <Route 
-                path="/dashboard" 
+              <Route
+                path="/dashboard"
                 element={
                   <ProtectedRoute>
                     <Dashboard />
                   </ProtectedRoute>
-                } 
+                }
               />
-              <Route 
-                path="/profile" 
+              <Route
+                path="/profile"
                 element={
                   <ProtectedRoute>
                     <EditProfile />
                   </ProtectedRoute>
-                } 
+                }
               />
-              <Route 
-                path="/user/:id" 
+              <Route
+                path="/user/:id"
                 element={
                   <ProtectedRoute>
                     <UserProfile />
                   </ProtectedRoute>
-                } 
+                }
               />
-              <Route 
-                path="/crushes" 
+              <Route
+                path="/crushes"
                 element={
                   <ProtectedRoute>
                     <Crushes />
                   </ProtectedRoute>
-                } 
+                }
               />
-              <Route 
-                path="/groups" 
+              <Route
+                path="/groups"
                 element={
                   <ProtectedRoute>
                     <Groups />
                   </ProtectedRoute>
-                } 
+                }
               />
-              <Route 
-                path="/groups/:id" 
+              <Route
+                path="/groups/:id"
                 element={
                   <ProtectedRoute>
                     <GroupChat />
                   </ProtectedRoute>
-                } 
+                }
               />
-              <Route 
-                path="/match" 
+              <Route
+                path="/match"
                 element={
                   <ProtectedRoute>
                     <AnonymousChat />
                   </ProtectedRoute>
-                } 
+                }
               />
-              <Route 
-                path="/friends" 
+              <Route
+                path="/friends"
                 element={
                   <ProtectedRoute>
                     <Friends />
                   </ProtectedRoute>
-                } 
+                }
               />
-              <Route 
-                path="/confessions" 
+              <Route
+                path="/confessions"
                 element={
                   <ProtectedRoute>
                     <Confessions />
                   </ProtectedRoute>
-                } 
+                }
               />
-              <Route 
-                path="/leaderboard" 
+              <Route
+                path="/leaderboard"
                 element={
                   <ProtectedRoute>
                     <Leaderboard />
                   </ProtectedRoute>
-                } 
+                }
               />
-              <Route 
-                path="/admin" 
+              <Route
+                path="/admin"
                 element={
                   <AdminRoute>
-                    <AdminDashboard />
+                    <AdminDashboard initialTab="overview" />
                   </AdminRoute>
-                } 
+                }
+              />
+              <Route
+                path="/admin/users"
+                element={
+                  <AdminRoute>
+                    <AdminDashboard initialTab="users" />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/reports"
+                element={
+                  <AdminRoute>
+                    <AdminDashboard initialTab="reports" />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/rooms"
+                element={
+                  <AdminRoute>
+                    <AdminDashboard initialTab="rooms" />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/ads"
+                element={
+                  <AdminRoute>
+                    <AdminDashboard initialTab="ads" />
+                  </AdminRoute>
+                }
               />
             </Routes>
           </div>

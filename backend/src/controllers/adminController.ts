@@ -5,6 +5,8 @@ import Ad from '../models/Ad.js';
 import Notification from '../models/Notification.js';
 import Message from '../models/Message.js';
 import Confession from '../models/Confession.js';
+import Group from '../models/Group.js';
+import GroupRequest from '../models/GroupRequest.js';
 
 interface CustomRequest extends Request {
     user?: any;
@@ -19,7 +21,7 @@ export const getAnalytics = async (req: Request, res: Response) => {
         const activeUsersCount = await User.countDocuments({ updatedAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } });
         const totalReports = await Report.countDocuments({ status: 'pending' });
         const totalConfessions = await Confession.countDocuments();
-        
+
         // Count chats in last 24h
         const chatsToday = await Message.countDocuments({ createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } });
 
@@ -52,7 +54,7 @@ export const getUsers = async (req: Request, res: Response) => {
 // @access  Private/Admin
 export const handleUserAction = async (req: CustomRequest, res: Response) => {
     const { action, durationDays } = req.body; // warn, mute, banTemp, banPerm, shadowBan
-    
+
     try {
         const user = await User.findById(req.params.id);
         if (!user) {
@@ -135,5 +137,132 @@ export const createAd = async (req: Request, res: Response) => {
         res.status(201).json(ad);
     } catch (error) {
         res.status(500).json({ message: 'Error creating ad' });
+    }
+};
+
+// @desc    Get all rooms (groups)
+// @route   GET /api/admin/rooms
+// @access  Private/Admin
+export const getRooms = async (req: Request, res: Response) => {
+    try {
+        const rooms = await Group.find({}).populate('admin', 'name email profilePhoto').sort({ createdAt: -1 });
+        res.json(rooms);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching rooms' });
+    }
+};
+
+// @desc    Create a new room (group)
+// @route   POST /api/admin/rooms
+// @access  Private/Admin
+export const createRoom = async (req: CustomRequest, res: Response) => {
+    const { name, description, type, adminEmail } = req.body;
+    try {
+        let adminId = req.user._id;
+
+        if (type === 'private' && adminEmail) {
+            const adminUser = await User.findOne({ email: adminEmail });
+            if (adminUser) {
+                adminId = adminUser._id;
+            } else {
+                res.status(404).json({ message: 'Admin user with this email not found' });
+                return;
+            }
+        }
+
+        const room = await Group.create({
+            name,
+            description,
+            type,
+            admin: adminId,
+            members: [adminId] // Add admin to members by default
+        });
+
+        const populatedRoom = await Group.findById(room._id).populate('admin', 'name email profilePhoto');
+        res.status(201).json(populatedRoom);
+    } catch (error) {
+        res.status(500).json({ message: 'Error creating room' });
+    }
+};
+
+// @desc    Delete a room (group)
+// @route   DELETE /api/admin/rooms/:id
+// @access  Private/Admin
+export const deleteRoom = async (req: Request, res: Response) => {
+    try {
+        const room = await Group.findById(req.params.id);
+        if (!room) {
+            res.status(404).json({ message: 'Room not found' });
+            return;
+        }
+        await room.deleteOne();
+        res.json({ message: 'Room removed' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error deleting room' });
+    }
+};
+
+// @desc    Get all room creation requests
+// @route   GET /api/admin/room-requests
+// @access  Private/Admin
+export const getRoomRequests = async (req: Request, res: Response) => {
+    try {
+        const requests = await GroupRequest.find({ type: 'create', status: 'pending' })
+            .populate('requester', 'name email year branch profilePhoto')
+            .sort({ createdAt: -1 });
+        res.json(requests);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching room requests' });
+    }
+};
+
+// @desc    Approve a room creation request
+// @route   PUT /api/admin/room-requests/:id/approve
+// @access  Private/Admin
+export const approveRoomRequest = async (req: Request, res: Response) => {
+    try {
+        const request = await GroupRequest.findById(req.params.id);
+        if (!request || request.type !== 'create' || request.status !== 'pending') {
+            res.status(404).json({ message: 'Valid pending room request not found' });
+            return;
+        }
+
+        // Create the group
+        const newGroup = await Group.create({
+            name: request.groupData?.name,
+            description: request.groupData?.description,
+            type: request.groupData?.type,
+            admin: request.requester,
+            members: [request.requester]
+        });
+
+        // Update request status
+        request.status = 'approved';
+        request.group = newGroup._id;
+        await request.save();
+
+        res.json({ message: 'Room request approved and room created', group: newGroup });
+    } catch (error) {
+        res.status(500).json({ message: 'Error approving room request' });
+    }
+};
+
+// @desc    Reject a room creation request
+// @route   PUT /api/admin/room-requests/:id/reject
+// @access  Private/Admin
+export const rejectRoomRequest = async (req: Request, res: Response) => {
+    try {
+        const request = await GroupRequest.findById(req.params.id);
+        if (!request || request.status !== 'pending') {
+            res.status(404).json({ message: 'Pending request not found' });
+            return;
+        }
+
+        request.status = 'rejected';
+        await request.save();
+
+        res.json({ message: 'Room request rejected' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error rejecting room request' });
     }
 };

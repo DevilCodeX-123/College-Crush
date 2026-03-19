@@ -15,7 +15,7 @@ import { useEffect } from 'react';
 const socket = io(SOCKET_URL);
 
 const FriendCard = ({ friend, selected, onSelect, onCrush, onRemove }: { friend: any, selected: boolean, onSelect: () => void, onCrush: () => void, onRemove: () => void }) => (
-    <Card 
+    <Card
         onClick={onSelect}
         className={`border-white/5 bg-white/[0.02] hover:bg-white/[0.05] rounded-3xl p-5 cursor-pointer transition-all group border-t-white/10 ${selected ? 'ring-2 ring-blue-500/50 bg-white/5' : ''}`}
     >
@@ -36,14 +36,14 @@ const FriendCard = ({ friend, selected, onSelect, onCrush, onRemove }: { friend:
                 <p className="text-[10px] text-gray-500 truncate mt-0.5">{friend.lastMessage}</p>
             </div>
             {!friend.isCrush && (
-                <button 
+                <button
                     onClick={(e) => { e.stopPropagation(); onCrush(); }}
                     className="p-3 rounded-xl bg-pink-500/10 hover:bg-pink-500/20 text-pink-500 transition-all opacity-0 group-hover:opacity-100"
                 >
                     <Heart className="w-4 h-4 fill-pink-500" />
                 </button>
             )}
-            <button 
+            <button
                 onClick={(e) => { e.stopPropagation(); onRemove(); }}
                 className="p-3 rounded-xl bg-white/5 hover:bg-red-500/10 hover:text-red-500 text-gray-600 transition-all opacity-0 group-hover:opacity-100"
                 title="Disconnect from this match"
@@ -85,7 +85,7 @@ const Friends = () => {
     useEffect(() => {
         if (selectedFriend?.id) {
             socket.emit('join_room', selectedFriend.id);
-            
+
             socket.on('receive_message', (data) => {
                 if (data.room === selectedFriend.id) {
                     refetchMessages();
@@ -100,7 +100,7 @@ const Friends = () => {
 
     const handleSend = async () => {
         if (!message.trim() || !selectedFriend) return;
-        
+
         const messageData = {
             room: selectedFriend.id,
             senderId: currentUser._id,
@@ -134,9 +134,9 @@ const Friends = () => {
 
     const handleSendCrush = () => {
         if (!crushMessage.trim()) return;
-        crushFromFriendMutation.mutate({ 
-            message: crushMessage, 
-            receiverId: crushModal.friendId 
+        crushFromFriendMutation.mutate({
+            message: crushMessage,
+            receiverId: crushModal.friendId
         });
     };
 
@@ -158,18 +158,18 @@ const Friends = () => {
 
     if (isLoading) return <div className="p-8 text-center text-gray-500">Loading your inner circle...</div>;
 
-    const filteredFriends = friends?.filter((f: any) => 
+    const filteredFriends = friends?.filter((f: any) =>
         f.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     return (
-        <div className="min-h-screen bg-[#0a0a0c] text-white p-8 overflow-hidden relative">
+        <div className="min-h-screen bg-[#0a0a0c] text-white p-4 md:p-8 overflow-hidden relative">
             <div className="absolute top-0 right-0 w-full h-full bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.05),transparent)]"></div>
-            
+
             <div className="max-w-6xl mx-auto relative z-10">
-                <header className="mb-12">
-                    <h1 className="text-5xl font-black tracking-tighter mb-4">Elite Circle</h1>
-                    <p className="text-gray-500 text-[10px] uppercase tracking-[0.3em] font-black opacity-60">Your revealed connections & whispers</p>
+                <header className="mb-8 md:mb-12">
+                    <h1 className="text-3xl md:text-5xl font-black tracking-tighter mb-2 md:mb-4">Elite Circle</h1>
+                    <p className="text-gray-500 text-[10px] uppercase tracking-[0.3em] font-black opacity-60">Your revealed connections &amp; whispers</p>
                 </header>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
@@ -177,8 +177,8 @@ const Friends = () => {
                     <div className="lg:col-span-4 space-y-6">
                         <div className="relative">
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                            <input 
-                                placeholder="Search friends..." 
+                            <input
+                                placeholder="Search friends..."
                                 className="w-full bg-white/5 border border-white/10 h-14 pl-12 rounded-2xl focus:outline-none focus:ring-1 focus:ring-blue-500/20 text-sm"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -192,10 +192,10 @@ const Friends = () => {
                                     <h2 className="text-[10px] uppercase tracking-[0.4em] font-black text-blue-500/60 px-2">Elite Connections</h2>
                                     <div className="space-y-3">
                                         {filteredFriends.filter((f: any) => f.isRevealed).map((friend: any) => (
-                                            <FriendCard 
-                                                key={friend.friendshipId || friend.id} 
-                                                friend={friend} 
-                                                selected={selectedFriend?.id === friend.id} 
+                                            <FriendCard
+                                                key={friend.friendshipId || friend.id}
+                                                friend={friend}
+                                                selected={selectedFriend?.id === friend.id}
                                                 onSelect={() => setSelectedFriend(friend)}
                                                 onCrush={() => setCrushModal({ isOpen: true, friendId: friend.id })}
                                                 onRemove={() => handleRemoveFriend(friend.friendshipId || friend.id)}
@@ -211,11 +211,11 @@ const Friends = () => {
                                     <h2 className="text-[10px] uppercase tracking-[0.4em] font-black text-purple-500/60 px-2">Shadow Matches</h2>
                                     <div className="space-y-3">
                                         {filteredFriends.filter((f: any) => !f.isRevealed).map((friend: any) => (
-                                            <FriendCard 
-                                                key={friend.friendshipId || friend.id} 
-                                                friend={friend} 
-                                                selected={selectedFriend?.id === friend.id} 
-                                                onSelect={() => setSelectedFriend(friend)} 
+                                            <FriendCard
+                                                key={friend.friendshipId || friend.id}
+                                                friend={friend}
+                                                selected={selectedFriend?.id === friend.id}
+                                                onSelect={() => setSelectedFriend(friend)}
                                                 onCrush={() => setCrushModal({ isOpen: true, friendId: friend.id })}
                                                 onRemove={() => handleRemoveFriend(friend.friendshipId || friend.id)}
                                             />
@@ -235,7 +235,7 @@ const Friends = () => {
                     {/* Chat Area */}
                     <div className="lg:col-span-8">
                         {selectedFriend ? (
-                            <Card className="border-white/10 bg-white/5 backdrop-blur-3xl rounded-[3rem] h-[700px] flex flex-col p-8 border-t-white/10 overflow-hidden">
+                            <Card className="border-white/10 bg-white/5 backdrop-blur-3xl rounded-[3rem] h-auto min-h-[500px] lg:h-[700px] flex flex-col p-6 md:p-8 border-t-white/10 overflow-hidden">
                                 <div className="flex items-center justify-between pb-6 border-b border-white/5">
                                     <div className="flex items-center space-x-4">
                                         <div className="w-12 h-12 rounded-2xl bg-blue-500/20 flex items-center justify-center border border-white/10">
@@ -255,15 +255,14 @@ const Friends = () => {
                                     ) : messages?.map((msg: any) => {
                                         const isOwn = msg.sender?._id === currentUser?._id;
                                         const displayName = isOwn ? "You" : (selectedFriend.isRevealed ? selectedFriend.name : "Anonymous Soul");
-                                        
+
                                         return (
                                             <div key={msg._id} className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}>
                                                 <p className="text-[10px] text-gray-600 mb-1 px-2 font-bold uppercase tracking-widest">{displayName}</p>
-                                                <div className={`max-w-[75%] p-4 rounded-3xl shadow-xl ${
-                                                    isOwn 
-                                                    ? 'bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-tr-none' 
+                                                <div className={`max-w-[75%] p-4 rounded-3xl shadow-xl ${isOwn
+                                                    ? 'bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-tr-none'
                                                     : 'bg-white/5 border border-white/10 text-gray-200 rounded-tl-none'
-                                                }`}>
+                                                    }`}>
                                                     <p className="text-sm font-light leading-relaxed">{msg.content}</p>
                                                 </div>
                                             </div>
@@ -272,14 +271,14 @@ const Friends = () => {
                                 </div>
 
                                 <div className="pt-6 border-t border-white/5 flex items-center space-x-4">
-                                    <input 
+                                    <input
                                         className="flex-1 bg-white/5 border border-white/10 h-14 px-6 rounded-2xl focus:outline-none focus:ring-1 focus:ring-blue-500/20 text-sm"
                                         placeholder="Type a message..."
                                         value={message}
                                         onChange={(e) => setMessage(e.target.value)}
                                         onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                                     />
-                                    <Button 
+                                    <Button
                                         onClick={handleSend}
                                         className="h-14 w-14 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white"
                                     >
@@ -294,7 +293,7 @@ const Friends = () => {
                                 </div>
                                 <h2 className="text-3xl font-black mb-4 tracking-tighter">Your Secret Whisper</h2>
                                 <p className="text-gray-500 max-w-sm font-light">Select a friend to continue your conversation. Remember, what happens in ClgCrush stays in ClgCrush.</p>
-                                
+
                                 <div className="mt-12 grid grid-cols-2 gap-6 opacity-30">
                                     <Heart className="w-8 h-8 text-pink-500" />
                                     <Sparkles className="w-8 h-8 text-blue-500" />
@@ -308,7 +307,7 @@ const Friends = () => {
                 <AnimatePresence>
                     {crushModal.isOpen && (
                         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm">
-                            <motion.div 
+                            <motion.div
                                 initial={{ scale: 0.9, opacity: 0 }}
                                 animate={{ scale: 1, opacity: 1 }}
                                 exit={{ scale: 0.9, opacity: 0 }}
@@ -320,23 +319,23 @@ const Friends = () => {
                                     Secret Crush
                                 </h2>
                                 <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mb-8 italic">Start an anonymous whisper...</p>
-                                
+
                                 <div className="space-y-6">
-                                    <textarea 
+                                    <textarea
                                         value={crushMessage}
                                         onChange={(e) => setCrushMessage(e.target.value)}
                                         className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 h-32 focus:ring-1 focus:ring-pink-500/50 outline-none transition-all placeholder:gray-700 text-white"
                                         placeholder="What's your secret message?..."
                                     />
                                     <div className="flex gap-4">
-                                        <Button 
-                                            variant="ghost" 
+                                        <Button
+                                            variant="ghost"
                                             onClick={() => setCrushModal({ isOpen: false, friendId: '' })}
                                             className="flex-1 h-14 rounded-2xl text-gray-500 font-bold"
                                         >
                                             Cancel
                                         </Button>
-                                        <Button 
+                                        <Button
                                             onClick={handleSendCrush}
                                             disabled={!crushMessage.trim() || crushFromFriendMutation.isPending}
                                             className="flex-1 h-14 rounded-2xl bg-gradient-to-r from-pink-600 to-blue-600 text-white font-black uppercase tracking-widest"

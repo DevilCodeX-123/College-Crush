@@ -26,24 +26,24 @@ const Leaderboard = () => {
     if (loading) return <div className="p-8 text-center text-gray-500">Loading campus fame...</div>;
 
     return (
-        <div className="p-8 max-w-4xl mx-auto space-y-12">
-            <header className="flex justify-between items-end">
+        <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-8 md:space-y-12">
+            <header className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
                 <div>
-                    <h1 className="text-4xl font-black mb-2 flex items-center">
-                        <Award className="w-10 h-10 mr-4 text-yellow-500" />
+                    <h1 className="text-3xl md:text-4xl font-black mb-2 flex items-center">
+                        <Award className="w-8 md:w-10 h-8 md:h-10 mr-3 md:mr-4 text-yellow-500" />
                         Campus Elite
                     </h1>
-                    <p className="text-gray-500 font-light">The most viewed and popular personalities of the week.</p>
+                    <p className="text-gray-500 font-light text-sm">The most viewed and popular personalities of the week.</p>
                 </div>
-                <div className="flex items-center space-x-2 text-pink-500 font-black uppercase tracking-widest text-[10px] bg-pink-500/10 px-4 py-2 rounded-full border border-pink-500/20">
+                <div className="flex items-center space-x-2 text-pink-500 font-black uppercase tracking-widest text-[10px] bg-pink-500/10 px-4 py-2 rounded-full border border-pink-500/20 w-fit">
                     <TrendingUp className="w-3 h-3" />
                     <span>Live Standings</span>
                 </div>
             </header>
 
             <div className="relative">
-                {/* Top 3 Podium (Conceptual realization) */}
-                <div className="grid grid-cols-3 gap-8 items-end mb-12">
+                {/* Top 3 Podium */}
+                <div className="grid grid-cols-3 gap-3 md:gap-8 items-end mb-8 md:mb-12">
                     {/* Rank 2 */}
                     {topUsers[1] && (
                         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>

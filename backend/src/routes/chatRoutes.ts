@@ -1,9 +1,9 @@
 import express from 'express';
-import { 
-    findMatch, 
+import {
+    findMatch,
     getMatchStatus,
-    revealIdentity, 
-    getGroups, 
+    revealIdentity,
+    getGroups,
     getFriends,
     requestJoinGroup,
     requestCreateGroup,
@@ -12,9 +12,13 @@ import {
     sendFriendRequest,
     acceptFriendRequest,
     rejectFriendRequest,
-    removeFriend
+    removeFriend,
+    getGroupJoinRequests,
+    handleJoinRequestDecision,
+    leaveGroup,
 } from '../controllers/chatController.js';
 import { protect } from '../middleware/authMiddleware.js';
+
 
 const router = express.Router();
 
@@ -27,6 +31,9 @@ router.get('/friends', protect, getFriends as any);
 // Group Requests
 router.post('/groups/join/:id', protect, requestJoinGroup as any);
 router.post('/groups/create', protect, requestCreateGroup as any);
+router.post('/groups/:id/leave', protect, leaveGroup as any);
+router.get('/groups/:id/requests', protect, getGroupJoinRequests as any);
+router.put('/groups/requests/:requestId/decision', protect, handleJoinRequestDecision as any);
 
 // Anonymous Chat Friend Requests
 router.post('/friend-request/:id', protect, sendFriendRequest as any);

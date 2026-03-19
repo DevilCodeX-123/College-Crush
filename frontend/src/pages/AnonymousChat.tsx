@@ -24,14 +24,14 @@ const AnonymousChat = () => {
     const [revealed, setRevealed] = useState(false);
     const [revealSuccess, setRevealSuccess] = useState(false);
     const [friendRequestStatus, setFriendRequestStatus] = useState<'none' | 'sent' | 'received' | 'accepted'>('none');
-    
+
     // Chat state
     const [messageInput, setMessageInput] = useState('');
 
     const startMatch = async () => {
         setIsMatching(true);
         setMatch(null);
-        
+
         try {
             const { data } = await api.post('/chat/match', { interests });
             setMatch(data);
@@ -56,7 +56,7 @@ const AnonymousChat = () => {
     useEffect(() => {
         if (match?.matchId) {
             socket.emit('join_room', match.matchId);
-            
+
             socket.on('receive_message', (data) => {
                 if (data.room === match.matchId) {
                     refetchMessages();
@@ -72,7 +72,7 @@ const AnonymousChat = () => {
 
     const handleSend = async () => {
         if (!messageInput.trim() || !match?.matchId) return;
-        
+
         const messageData = {
             room: match.matchId,
             senderId: currentUser._id,
@@ -133,7 +133,7 @@ const AnonymousChat = () => {
             interval = setInterval(async () => {
                 try {
                     const { data: m } = await api.get(`/chat/match/${match.matchId}`);
-                    
+
                     // Update friend request status
                     if (m.status === 'friends') {
                         setFriendRequestStatus('accepted');
@@ -151,7 +151,7 @@ const AnonymousChat = () => {
                     const isUserA = m.userA?._id === currentUser?._id;
                     const imRevealed = isUserA ? m.revealedToA : m.revealedToB;
 
-                    
+
                     setRevealed(imRevealed);
                     setRevealSuccess(m.revealedToA && m.revealedToB);
 
@@ -183,7 +183,7 @@ const AnonymousChat = () => {
             if (data.revealedToA && data.revealedToB) {
                 setRevealSuccess(true);
                 setMatch((prev: any) => ({ ...prev, ...data }));
-                
+
                 // Success system message
                 socket.emit('send_message', {
                     room: match.matchId,
@@ -199,13 +199,13 @@ const AnonymousChat = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#0a0a0c] text-white p-8 relative overflow-hidden flex items-center justify-center">
-             {/* Background Effects */}
-             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10"></div>
-             <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-600/20 blur-[120px] rounded-full animate-pulse"></div>
-             <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-600/20 blur-[120px] rounded-full animate-pulse delay-1000"></div>
+        <div className="min-h-screen bg-[#0a0a0c] text-white p-4 md:p-8 relative overflow-hidden flex items-center justify-center">
+            {/* Background Effects */}
+            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10"></div>
+            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-600/20 blur-[120px] rounded-full animate-pulse"></div>
+            <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-600/20 blur-[120px] rounded-full animate-pulse delay-1000"></div>
 
-             <div className="max-w-4xl w-full z-10 transition-all duration-700">
+            <div className="max-w-4xl w-full z-10 transition-all duration-700">
                 <AnimatePresence mode="wait">
                     {!isMatching && !match ? (
                         <motion.div
@@ -221,7 +221,7 @@ const AnonymousChat = () => {
                                 </div>
                                 <h1 className="text-5xl font-black tracking-tighter mb-4">Shadow Match</h1>
                                 <p className="text-gray-400 mb-12 font-light">Find your campus twin. No names, no faces. Just pure vibes until you both agree to reveal.</p>
-                                
+
                                 <div className="space-y-6 text-left mb-12">
                                     <label className="text-[10px] uppercase tracking-[0.3em] font-black text-gray-500 ml-1">Your Interests</label>
                                     <div className="flex flex-wrap gap-3">
@@ -232,7 +232,7 @@ const AnonymousChat = () => {
                                             </span>
                                         ))}
                                         <div className="flex-1 min-w-[150px] relative">
-                                            <Input 
+                                            <Input
                                                 value={newInterest}
                                                 onChange={(e) => setNewInterest(e.target.value)}
                                                 onKeyDown={(e) => e.key === 'Enter' && (setInterests([...interests, newInterest]), setNewInterest(''))}
@@ -243,7 +243,7 @@ const AnonymousChat = () => {
                                     </div>
                                 </div>
 
-                                <Button 
+                                <Button
                                     onClick={startMatch}
                                     className="w-full bg-gradient-to-r from-purple-600 to-blue-600 h-20 rounded-3xl font-black text-xl shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]"
                                 >
@@ -256,17 +256,17 @@ const AnonymousChat = () => {
                             key="chat-view"
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="w-full h-[85vh] flex flex-col"
+                            className="w-full h-[80vh] md:h-[85vh] flex flex-col"
                         >
-                             <Card className="flex-1 border-white/10 bg-white/5 backdrop-blur-3xl rounded-[3.5rem] p-10 border-t-white/20 shadow-2xl relative overflow-hidden flex flex-col">
+                            <Card className="flex-1 border-white/10 bg-white/5 backdrop-blur-3xl rounded-[3.5rem] p-10 border-t-white/20 shadow-2xl relative overflow-hidden flex flex-col">
                                 <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-purple-500 via-blue-500 to-pink-500"></div>
-                                
+
                                 {/* Header */}
                                 <div className="flex items-center justify-between mb-8 pb-8 border-b border-white/5">
                                     <div className="flex items-center space-x-6">
                                         <div className="w-20 h-20 rounded-[2rem] bg-gradient-to-br from-gray-800 to-gray-900 border border-white/10 flex items-center justify-center text-4xl font-black text-gray-700 shadow-inner overflow-hidden relative">
                                             {match ? '?' : (
-                                                <motion.div 
+                                                <motion.div
                                                     animate={{ opacity: [0.3, 1, 0.3] }}
                                                     transition={{ duration: 2, repeat: Infinity }}
                                                     className="absolute inset-0 bg-blue-500/10 flex items-center justify-center"
@@ -276,14 +276,14 @@ const AnonymousChat = () => {
                                             )}
                                         </div>
                                         <div>
-                                             <p className="text-3xl font-black tracking-tight">
-                                                {!match ? 'Finding Match...' : (revealSuccess ? 
-                                                    (( (match.userA?._id || match.userA)?.toString() === currentUser?._id?.toString() ? match.userB?.name : match.userA?.name) || 'Revealed Soul') 
+                                            <p className="text-3xl font-black tracking-tight">
+                                                {!match ? 'Finding Match...' : (revealSuccess ?
+                                                    (((match.userA?._id || match.userA)?.toString() === currentUser?._id?.toString() ? match.userB?.name : match.userA?.name) || 'Revealed Soul')
                                                     : 'Anonymous Soul')}
                                             </p>
                                             <div className="flex items-center mt-2 space-x-4">
                                                 <p className="text-[10px] text-gray-500 uppercase tracking-widest font-black flex items-center">
-                                                    <div className={`w-2 h-2 rounded-full mr-2 ${match ? 'bg-green-500 animate-pulse' : 'bg-blue-500'}`}></div> 
+                                                    <div className={`w-2 h-2 rounded-full mr-2 ${match ? 'bg-green-500 animate-pulse' : 'bg-blue-500'}`}></div>
                                                     {match ? 'Active Jam' : 'Global Search Active'}
                                                 </p>
                                                 {match && match.commonInterests?.length > 0 && (
@@ -299,10 +299,10 @@ const AnonymousChat = () => {
                                             </div>
                                         </div>
                                     </div>
-                                    
+
                                     {match && (
                                         <div className="flex gap-4">
-                                            <Button 
+                                            <Button
                                                 onClick={() => setMatch(null)}
                                                 className="h-14 w-14 rounded-2xl bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/20 shadow-xl"
                                             >
@@ -334,9 +334,9 @@ const AnonymousChat = () => {
                                                 <div className="mb-6 space-y-4 px-2">
                                                     <AnimatePresence mode="popLayout">
                                                         {friendRequestStatus === 'received' && (
-                                                            <motion.div 
-                                                                initial={{ opacity: 0, scale: 0.9, y: -20 }} 
-                                                                animate={{ opacity: 1, scale: 1, y: 0 }} 
+                                                            <motion.div
+                                                                initial={{ opacity: 0, scale: 0.9, y: -20 }}
+                                                                animate={{ opacity: 1, scale: 1, y: 0 }}
                                                                 exit={{ opacity: 0, scale: 0.9, y: -20 }}
                                                                 className="flex flex-col items-center py-6 space-y-4 bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-[2.5rem] border border-white/10 backdrop-blur-xl shadow-2xl relative overflow-hidden"
                                                             >
@@ -346,12 +346,12 @@ const AnonymousChat = () => {
                                                                     <p className="text-sm font-black text-white leading-tight">They want to join your Elite Circle</p>
                                                                 </div>
                                                                 <div className="flex gap-3 w-full px-6 relative z-10">
-                                                                    <Button 
-                                                                        onClick={handleAcceptFriendRequest} 
+                                                                    <Button
+                                                                        onClick={handleAcceptFriendRequest}
                                                                         className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl h-10 font-black uppercase tracking-widest text-[9px]"
                                                                     >Accept</Button>
-                                                                    <Button 
-                                                                        onClick={handleRejectFriendRequest} 
+                                                                    <Button
+                                                                        onClick={handleRejectFriendRequest}
                                                                         className="flex-1 bg-white/5 hover:bg-white/10 rounded-xl h-10 font-black uppercase tracking-widest text-[9px] border border-white/5 text-gray-400"
                                                                     >Decline</Button>
                                                                 </div>
@@ -359,13 +359,13 @@ const AnonymousChat = () => {
                                                         )}
 
                                                         {!revealed && (
-                                                            <motion.div 
+                                                            <motion.div
                                                                 key="reveal-button"
-                                                                initial={{ opacity: 0, y: -10 }} 
-                                                                animate={{ opacity: 1, y: 0 }} 
+                                                                initial={{ opacity: 0, y: -10 }}
+                                                                animate={{ opacity: 1, y: 0 }}
                                                                 exit={{ opacity: 0, scale: 0.9 }}
                                                             >
-                                                                <Button 
+                                                                <Button
                                                                     onClick={handleReveal}
                                                                     className="w-full rounded-2xl bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600 text-[10px] font-black uppercase tracking-[0.2em] h-14 shadow-lg border border-white/10 group relative overflow-hidden"
                                                                 >
@@ -376,31 +376,31 @@ const AnonymousChat = () => {
                                                         )}
 
                                                         {!revealSuccess && revealed && (
-                                                            <motion.div 
+                                                            <motion.div
                                                                 key="await-reveal"
-                                                                initial={{ opacity: 0, scale: 0.9 }} 
-                                                                animate={{ opacity: 1, scale: 1 }} 
+                                                                initial={{ opacity: 0, scale: 0.9 }}
+                                                                animate={{ opacity: 1, scale: 1 }}
                                                                 exit={{ opacity: 0, scale: 0.9 }}
                                                                 className="w-full py-4 bg-white/5 border border-dashed border-white/10 rounded-2xl backdrop-blur-md text-center"
                                                             >
                                                                 <p className="text-[10px] text-purple-400 font-black uppercase tracking-[0.2em]">
-                                                                    { ( (match?.userA?._id === currentUser?._id && match?.revealedToB) || (match?.userB?._id === currentUser?._id && match?.revealedToA) ) 
-                                                                        ? "THEY REVEALED! ✨ Reveal back to connect." 
+                                                                    {((match?.userA?._id === currentUser?._id && match?.revealedToB) || (match?.userB?._id === currentUser?._id && match?.revealedToA))
+                                                                        ? "THEY REVEALED! ✨ Reveal back to connect."
                                                                         : "AWAITING MUTUAL REVEAL... 🔒"}
                                                                 </p>
                                                             </motion.div>
                                                         )}
 
                                                         {revealSuccess && friendRequestStatus === 'none' && (
-                                                            <motion.div 
+                                                            <motion.div
                                                                 key="add-friend"
-                                                                initial={{ opacity: 0, scale: 0.9 }} 
-                                                                animate={{ opacity: 1, scale: 1 }} 
+                                                                initial={{ opacity: 0, scale: 0.9 }}
+                                                                animate={{ opacity: 1, scale: 1 }}
                                                                 exit={{ opacity: 0, scale: 0.9 }}
                                                                 className="flex flex-col items-center py-6 space-y-4 bg-gradient-to-tr from-blue-500/10 via-purple-500/10 to-pink-500/10 rounded-[2.5rem] border border-white/10 text-center"
                                                             >
                                                                 <p className="text-sm font-black text-white">{(match.userA?._id === currentUser?._id ? match.userB?.name : match.userA?.name) || 'Identity'} Unlocked! ✨</p>
-                                                                <Button 
+                                                                <Button
                                                                     onClick={handleSendFriendRequest}
                                                                     className="rounded-full bg-gradient-to-r from-green-500 to-emerald-600 text-[9px] font-black uppercase tracking-[0.2em] px-8 h-10"
                                                                 >
@@ -418,12 +418,12 @@ const AnonymousChat = () => {
                                                     const isSystem = !msg.sender;
                                                     const senderId = msg.sender?._id || msg.sender;
                                                     const isOwn = !isSystem && (senderId?.toString() === currentUser?._id?.toString());
-                                                    
+
                                                     const userAID = match?.userA?._id || match?.userA;
                                                     const isUserA = userAID?.toString() === currentUser?._id?.toString();
                                                     const otherUser = isUserA ? match?.userB : match?.userA;
                                                     const otherUserName = otherUser?.name || "Anonymous Soul";
-                                                    
+
                                                     const displayName = isOwn ? "You" : (revealSuccess ? (msg.sender?.name || otherUserName) : "Anonymous Soul");
 
                                                     if (isSystem) {
@@ -444,9 +444,9 @@ const AnonymousChat = () => {
                                                             </div>
                                                         </div>
                                                     );
-                                                 })}
-                                             </div>
-                                         )}
+                                                })}
+                                            </div>
+                                        )}
                                     </AnimatePresence>
                                 </div>
 
@@ -454,7 +454,7 @@ const AnonymousChat = () => {
                                 {/* Footer */}
                                 <div className="flex flex-col gap-4">
                                     <div className="flex gap-6">
-                                        <Input 
+                                        <Input
                                             disabled={!match}
                                             value={messageInput}
                                             onChange={(e) => setMessageInput(e.target.value)}
@@ -462,7 +462,7 @@ const AnonymousChat = () => {
                                             placeholder={match ? "Whisper anonymously..." : "Waiting for connection..."}
                                             className="bg-white/5 border-white/10 h-16 rounded-3xl focus:ring-purple-500/20 px-8 text-lg disabled:opacity-50"
                                         />
-                                        <Button 
+                                        <Button
                                             disabled={!match}
                                             onClick={handleSend}
                                             className="h-16 w-16 rounded-3xl bg-gradient-to-tr from-purple-600 to-blue-600 shadow-lg shadow-purple-500/20"
@@ -471,9 +471,9 @@ const AnonymousChat = () => {
                                         </Button>
                                     </div>
                                 </div>
-                                
+
                                 {friendRequestStatus === 'accepted' && (
-                                    <motion.div 
+                                    <motion.div
                                         initial={{ opacity: 0, scale: 0.9 }}
                                         animate={{ opacity: 1, scale: 1 }}
                                         className="mt-8 bg-gradient-to-tr from-green-500/20 to-emerald-500/20 border border-green-500/20 p-8 rounded-[3rem] text-center backdrop-blur-xl relative overflow-hidden"
@@ -487,8 +487,8 @@ const AnonymousChat = () => {
                                                 <p className="text-xl font-black text-white uppercase tracking-tight">Elite Circle Connection Forged</p>
                                                 <p className="text-[10px] text-green-400 font-bold uppercase tracking-[0.2em]">Destiny has found its match</p>
                                             </div>
-                                            <Button 
-                                                onClick={() => navigate('/friends')} 
+                                            <Button
+                                                onClick={() => navigate('/friends')}
                                                 className="bg-white/10 hover:bg-white/20 border border-white/10 rounded-2xl px-8 h-12 font-black uppercase tracking-widest text-[10px] transition-all"
                                             >
                                                 Enter Friends Hub
@@ -496,11 +496,11 @@ const AnonymousChat = () => {
                                         </div>
                                     </motion.div>
                                 )}
-                             </Card>
+                            </Card>
                         </motion.div>
                     )}
                 </AnimatePresence>
-             </div>
+            </div>
         </div>
     );
 };

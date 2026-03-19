@@ -117,7 +117,7 @@ const Confessions = () => {
           >
             <Ghost className="w-10 h-10 text-white animate-bounce" />
           </motion.div>
-          <h1 className="text-5xl font-black tracking-tight text-white mb-2">
+          <h1 className="text-3xl md:text-5xl font-black tracking-tight text-white mb-2">
             Confession <small className="text-pink-500">Wall</small>
           </h1>
           <p className="text-gray-400 font-light text-lg">
@@ -142,13 +142,13 @@ const Confessions = () => {
                   {content.length}/500
                 </div>
               </div>
-              
+
               <div className="flex justify-between items-center">
                 <div className="flex items-center space-x-2 text-xs text-gray-500 uppercase tracking-widest font-black">
                   <ShieldAlert className="w-4 h-4 text-amber-500" />
                   <span>100% Anonymous</span>
                 </div>
-                <Button 
+                <Button
                   disabled={loading || !content.trim()}
                   className="h-12 px-8 bg-white text-black hover:bg-white/90 rounded-xl font-bold shadow-xl shadow-white/5"
                 >
@@ -195,21 +195,21 @@ const Confessions = () => {
                           </p>
                         </div>
                       </div>
-                      
+
                       <div className="flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         {(user?._id === confession.author || user?.role === 'admin') && (
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={() => handleDelete(confession._id)}
                             className="text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded-full"
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         )}
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           onClick={() => handleReport(confession._id)}
                           className="text-gray-500 hover:text-amber-500 hover:bg-amber-500/10 rounded-full"
                         >
@@ -226,7 +226,7 @@ const Confessions = () => {
 
                     <CardFooter className="px-8 pb-8 pt-0 flex border-t border-white/5 mt-4">
                       <div className="flex items-center space-x-6 mt-6">
-                        <button 
+                        <button
                           onClick={() => handleReact(confession._id, 'love')}
                           className="flex items-center space-x-2 text-pink-500/60 hover:text-pink-500 transition-colors group/btn"
                         >
@@ -236,7 +236,7 @@ const Confessions = () => {
                           <span className="text-sm font-bold">{confession.reactions?.love || 0}</span>
                         </button>
 
-                        <button 
+                        <button
                           onClick={() => handleReact(confession._id, 'funny')}
                           className="flex items-center space-x-2 text-blue-500/60 hover:text-blue-500 transition-colors group/btn"
                         >
@@ -246,7 +246,7 @@ const Confessions = () => {
                           <span className="text-sm font-bold">{confession.reactions?.funny || 0}</span>
                         </button>
 
-                        <button 
+                        <button
                           onClick={() => handleReact(confession._id, 'fire')}
                           className="flex items-center space-x-2 text-orange-500/60 hover:text-orange-500 transition-colors group/btn"
                         >
