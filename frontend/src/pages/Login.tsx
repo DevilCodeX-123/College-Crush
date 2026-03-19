@@ -6,7 +6,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../components/ui/card';
 import { Label } from '../components/ui/label';
-import { Heart, Sparkles, LogIn, Eye, EyeOff } from 'lucide-react';
+import { Heart, Sparkles, LogIn, Eye, EyeOff, Instagram } from 'lucide-react';
 import api from '../lib/api';
 
 const Login = () => {
@@ -97,8 +97,8 @@ const Login = () => {
                   </button>
                 </div>
               </div>
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 className="w-full h-12 bg-gradient-to-r from-blue-600 to-pink-600 hover:from-blue-500 hover:to-pink-500 text-white border-0 rounded-xl shadow-lg shadow-pink-500/20 transition-all hover:scale-[1.02] active:scale-[0.98] font-bold"
                 disabled={loading}
               >
@@ -125,6 +125,25 @@ const Login = () => {
           </CardFooter>
         </Card>
       </motion.div>
+
+      {/* Footer Credits */}
+      <div className="fixed bottom-6 left-0 w-full z-10 flex flex-col items-center space-y-2 opacity-60 hover:opacity-100 transition-opacity">
+        <p className="text-[9px] text-gray-600 uppercase tracking-[0.2em] font-black">Powered by</p>
+        <a
+          href="https://www.instagram.com/devil_kk_1?igsh=MTlucnpoZnJ1NHhoag=="
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center space-x-2 px-3 py-1 rounded-lg bg-white/5 border border-white/5 transition-all group"
+        >
+          <Instagram className="w-3 h-3 text-pink-500 group-hover:scale-110 transition-transform" />
+          <span className="text-[10px] font-black bg-gradient-to-r from-pink-400 to-purple-500 bg-clip-text text-transparent">
+            DEVIL KK
+          </span>
+        </a>
+        <p className="text-[9px] text-gray-700 font-bold tracking-tight text-center">
+          Special Thanks to <span className="text-gray-600">✨ Devil Sena ✨</span>
+        </p>
+      </div>
     </div>
   );
 };

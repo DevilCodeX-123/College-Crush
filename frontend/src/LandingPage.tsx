@@ -1,7 +1,7 @@
 
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Heart, MessageCircle, Sparkles, Users } from 'lucide-react';
+import { Heart, Instagram, MessageCircle, Sparkles, Users } from 'lucide-react';
 import { Button } from './components/ui/button';
 
 const LandingPage = () => {
@@ -42,29 +42,29 @@ const LandingPage = () => {
             <Sparkles className="w-4 h-4 mr-2" />
             Connect with your campus anonymously
           </div>
-          
+
           <h1 className="text-6xl md:text-8xl font-black mb-6 tracking-tight leading-none bg-gradient-to-b from-white to-white/50 bg-clip-text text-transparent">
             Share Your <br />
             <span className="bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
               Campus Crush
             </span>
           </h1>
-          
+
           <p className="max-w-2xl mx-auto text-xl text-gray-400 mb-10 leading-relaxed font-light">
-            The modern social platform for college students. Express your feelings, 
+            The modern social platform for college students. Express your feelings,
             share anonymous confessions, and find your secret match without the pressure.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6">
-            <Button 
-              size="lg" 
+            <Button
+              size="lg"
               onClick={() => navigate('/signup')}
               className="h-14 px-10 text-lg font-bold bg-white text-black hover:bg-white/90 rounded-2xl transition-all hover:scale-105"
             >
               Get Started
             </Button>
-            <Button 
-              size="lg" 
+            <Button
+              size="lg"
               variant="outline"
               className="h-14 px-10 text-lg font-bold border-white/10 bg-white/5 hover:bg-white/10 rounded-2xl backdrop-blur-sm"
             >
@@ -94,10 +94,30 @@ const LandingPage = () => {
           ))}
         </div>
       </main>
-      
+
       {/* Footer */}
-      <footer className="relative z-10 py-10 border-t border-white/5 text-center text-gray-500 text-sm font-light">
-        © 2026 clgcrush. Built for the modern student.
+      {/* Footer */}
+      <footer className="relative z-10 py-12 border-t border-white/5 flex flex-col items-center space-y-6">
+        <p className="text-gray-500 text-sm font-light">© 2026 clgcrush. Built for the modern student.</p>
+
+        <div className="flex flex-col items-center space-y-3">
+          <p className="text-[10px] text-gray-600 uppercase tracking-widest font-black">Powered by</p>
+          <a
+            href="https://www.instagram.com/devil_kk_1?igsh=MTlucnpoZnJ1NHhoag=="
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center space-x-2 px-4 py-1.5 rounded-xl bg-white/5 hover:bg-pink-500/10 border border-white/5 transition-all group"
+          >
+            <Instagram className="w-4 h-4 text-pink-500 group-hover:scale-110 transition-transform" />
+            <span className="text-sm font-black bg-gradient-to-r from-pink-400 to-purple-500 bg-clip-text text-transparent">
+              DEVIL KK
+            </span>
+          </a>
+          <p className="text-[9px] text-gray-600 leading-relaxed font-bold tracking-wide text-center">
+            Special Thanks to<br />
+            <span className="text-gray-500 text-[11px]">✨ Devil Sena ✨</span>
+          </p>
+        </div>
       </footer>
     </div>
   );

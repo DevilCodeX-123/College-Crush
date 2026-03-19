@@ -7,7 +7,7 @@ import { Input } from '../components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../components/ui/card';
 import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Heart, Sparkles, UserPlus, Eye, EyeOff } from 'lucide-react';
+import { Heart, Sparkles, UserPlus, Eye, EyeOff, Instagram } from 'lucide-react';
 import api from '../lib/api';
 
 const Signup = () => {
@@ -22,7 +22,7 @@ const Signup = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  
+
   const themePresets: Record<string, { orb1: string, orb2: string, heart: string, shadow: string, button: string }> = {
     Male: {
       orb1: 'bg-blue-500/10',
@@ -193,8 +193,8 @@ const Signup = () => {
                   </button>
                 </div>
               </div>
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 className={`w-full h-12 mt-4 bg-gradient-to-r ${currentTheme.button} text-white border-0 rounded-xl shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98] font-bold duration-500`}
                 disabled={loading}
               >
@@ -221,6 +221,25 @@ const Signup = () => {
           </CardFooter>
         </Card>
       </motion.div>
+
+      {/* Footer Credits */}
+      <div className="fixed bottom-6 left-0 w-full z-10 flex flex-col items-center space-y-2 opacity-60 hover:opacity-100 transition-opacity">
+        <p className="text-[9px] text-gray-600 uppercase tracking-[0.2em] font-black">Powered by</p>
+        <a
+          href="https://www.instagram.com/devil_kk_1?igsh=MTlucnpoZnJ1NHhoag=="
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center space-x-2 px-3 py-1 rounded-lg bg-white/5 border border-white/5 transition-all group"
+        >
+          <Instagram className="w-3 h-3 text-pink-500 group-hover:scale-110 transition-transform" />
+          <span className="text-[10px] font-black bg-gradient-to-r from-pink-400 to-purple-500 bg-clip-text text-transparent">
+            DEVIL KK
+          </span>
+        </a>
+        <p className="text-[9px] text-gray-700 font-bold tracking-tight text-center">
+          Special Thanks to <span className="text-gray-600">✨ Devil Sena ✨</span>
+        </p>
+      </div>
     </div>
   );
 };
