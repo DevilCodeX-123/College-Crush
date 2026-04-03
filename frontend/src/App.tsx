@@ -24,18 +24,18 @@ import { Toaster } from './components/ui/toaster';
 
 const queryClient = new QueryClient();
 
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+const ProtectedRoute = ({ children, qrSettings }: { children: React.ReactNode, qrSettings: any }) => {
   const { user, loading } = useAuth();
   if (loading) return <div>Loading...</div>;
   if (!user) return <Navigate to="/login" />;
-  return <Layout>{children}</Layout>;
+  return <Layout isSurpriseActive={qrSettings?.settings?.isActive}>{children}</Layout>;
 };
 
-const AdminRoute = ({ children }: { children: React.ReactNode }) => {
+const AdminRoute = ({ children, qrSettings }: { children: React.ReactNode, qrSettings: any }) => {
   const { user, loading } = useAuth();
   if (loading) return <div>Loading...</div>;
   if (!user || user.role !== 'admin') return <Navigate to="/dashboard" />;
-  return <Layout>{children}</Layout>;
+  return <Layout isSurpriseActive={qrSettings?.settings?.isActive}>{children}</Layout>;
 };
 
 import { useState, useEffect } from 'react';
@@ -72,19 +72,26 @@ function App() {
               {/* Dynamic Root Route */}
               <Route 
                 path="/" 
-                element={isSurpriseActive ? <Layout><QRRevealPage /></Layout> : <LandingPage />} 
+                element={isSurpriseActive ? <Layout isSurpriseActive={isSurpriseActive}><QRRevealPage /></Layout> : <LandingPage />} 
               />
               
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
-              <Route path="/qr-reveal" element={<Layout><QRRevealPage /></Layout>} />
+              <Route 
+                path="/qr-reveal" 
+                element={
+                  isSurpriseActive ? 
+                  <Layout isSurpriseActive={isSurpriseActive}><QRRevealPage /></Layout> : 
+                  <Navigate to="/dashboard" />
+                } 
+              />
 
 
 
               <Route
                 path="/dashboard"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute qrSettings={qrSettings}>
                     {isSurpriseActive ? <QRRevealPage /> : <Dashboard />}
                   </ProtectedRoute>
                 }
@@ -93,7 +100,7 @@ function App() {
               <Route
                 path="/profile"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute qrSettings={qrSettings}>
                     <EditProfile />
                   </ProtectedRoute>
                 }
@@ -101,7 +108,7 @@ function App() {
               <Route
                 path="/user/:id"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute qrSettings={qrSettings}>
                     <UserProfile />
                   </ProtectedRoute>
                 }
@@ -109,7 +116,7 @@ function App() {
               <Route
                 path="/crushes"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute qrSettings={qrSettings}>
                     <Crushes />
                   </ProtectedRoute>
                 }
@@ -117,7 +124,7 @@ function App() {
               <Route
                 path="/groups"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute qrSettings={qrSettings}>
                     <Groups />
                   </ProtectedRoute>
                 }
@@ -125,7 +132,7 @@ function App() {
               <Route
                 path="/groups/:id"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute qrSettings={qrSettings}>
                     <GroupChat />
                   </ProtectedRoute>
                 }
@@ -133,7 +140,7 @@ function App() {
               <Route
                 path="/match"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute qrSettings={qrSettings}>
                     <AnonymousChat />
                   </ProtectedRoute>
                 }
@@ -141,7 +148,7 @@ function App() {
               <Route
                 path="/friends"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute qrSettings={qrSettings}>
                     <Friends />
                   </ProtectedRoute>
                 }
@@ -149,7 +156,7 @@ function App() {
               <Route
                 path="/confessions"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute qrSettings={qrSettings}>
                     <Confessions />
                   </ProtectedRoute>
                 }
@@ -157,7 +164,7 @@ function App() {
               <Route
                 path="/leaderboard"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute qrSettings={qrSettings}>
                     <Leaderboard />
                   </ProtectedRoute>
                 }
@@ -165,7 +172,7 @@ function App() {
               <Route
                 path="/admin"
                 element={
-                  <AdminRoute>
+                  <AdminRoute qrSettings={qrSettings}>
                     <AdminDashboard initialTab="overview" />
                   </AdminRoute>
                 }
@@ -173,7 +180,7 @@ function App() {
               <Route
                 path="/admin/users"
                 element={
-                  <AdminRoute>
+                  <AdminRoute qrSettings={qrSettings}>
                     <AdminDashboard initialTab="users" />
                   </AdminRoute>
                 }
@@ -181,7 +188,7 @@ function App() {
               <Route
                 path="/admin/reports"
                 element={
-                  <AdminRoute>
+                  <AdminRoute qrSettings={qrSettings}>
                     <AdminDashboard initialTab="reports" />
                   </AdminRoute>
                 }
@@ -189,7 +196,7 @@ function App() {
               <Route
                 path="/admin/rooms"
                 element={
-                  <AdminRoute>
+                  <AdminRoute qrSettings={qrSettings}>
                     <AdminDashboard initialTab="rooms" />
                   </AdminRoute>
                 }
@@ -197,7 +204,7 @@ function App() {
               <Route
                 path="/admin/ads"
                 element={
-                  <AdminRoute>
+                  <AdminRoute qrSettings={qrSettings}>
                     <AdminDashboard initialTab="ads" />
                   </AdminRoute>
                 }
@@ -205,7 +212,7 @@ function App() {
               <Route
                 path="/admin/qr"
                 element={
-                  <AdminRoute>
+                  <AdminRoute qrSettings={qrSettings}>
                     <AdminDashboard initialTab="qr" />
                   </AdminRoute>
                 }

@@ -6,15 +6,16 @@ import UserAvatar from './UserAvatar';
 
 interface LayoutProps {
     children: React.ReactNode;
+    isSurpriseActive?: boolean;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children }) => {
+const Layout: React.FC<LayoutProps> = ({ children, isSurpriseActive }) => {
     const { user } = useAuth();
     const navigate = useNavigate();
 
     return (
         <div className="min-h-screen bg-[#0a0a0c] text-white flex">
-            <Sidebar />
+            <Sidebar isSurpriseActive={isSurpriseActive} />
             {/* On desktop offset for sidebar, on mobile no offset (hamburger menu) */}
             <main className="flex-1 md:ml-64 min-h-screen relative">
                 {/* Topbar / Profile Corner */}

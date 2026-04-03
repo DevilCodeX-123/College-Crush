@@ -15,6 +15,7 @@ import qrRoutes from './routes/qrRoutes.js';
 
 import Message from './models/Message.js';
 import User from './models/User.js';
+import Group from './models/Group.js';
 import jwt from 'jsonwebtoken';
 
 dotenv.config({ path: '../.env' });
@@ -76,32 +77,78 @@ io.on('connection', async (socket) => {
     socket.join(`user_${userId}`);
   }
 
-  socket.on('join_room', (roomId) => {
-    socket.join(roomId);
-    console.log(`User ${socket.id} joined room ${roomId}`);
+  socket.on('join_room', async (roomId) => {
+    try {
+      console.log(`[SOCKET] User ${userId} attempting to join: ${roomId}`);
+      // If roomId is a MongoDB ID (24 hex chars), it's likely a group or match
+      if (roomId && roomId.toString().match(/^[0-9a-fA-F]{24}$/)) {
+        const group = await Group.findById(roomId);
+        if (group && group.type === 'private') {
+          if (!group.members.some(m => m.toString() === userId)) {
+            console.log(`[SOCKET] Unauthorized join attempt to private room ${roomId} by ${userId}`);
+            return;
+          }
+        }
+        console.log(`[SOCKET] Group check passed for ${roomId}`);
+      }
+      
+      socket.join(roomId);
+      console.log(`[SOCKET] User ${userId} successfully joined room: ${roomId}`);
+    } catch (error) {
+      console.error('[SOCKET] Join room failed', error);
+    }
   });
 
   socket.on('send_message', async (data) => {
     const { room, senderId, content, isGroup } = data;
+    const userId = (socket as any).userId;
+
+    console.log(`[SOCKET] Message received from ${userId} for room ${room}`);
+
+    if (!userId || userId.toString() !== senderId.toString()) {
+      console.log(`[SOCKET] Auth mismatch: session_userId=${userId}, data_senderId=${senderId}`);
+      return;
+    }
     
     try {
-      // Save to database
+      // Authorization for private groups
+      if (isGroup && room && room.toString().match(/^[0-9a-fA-F]{24}$/)) {
+        const group = await Group.findById(room);
+        if (group && group.type === 'private') {
+          if (!group.members.some(m => m.toString() === userId)) {
+            console.log(`[SOCKET] Unauthorized message attempt to private room ${room} by ${userId}`);
+            return;
+          }
+        }
+      }
+
+      // Save to database & populate
       const newMessage = await Message.create({
-        sender: senderId,
+        sender: userId,
         content,
         room: room,
         isGroup: isGroup || false
       });
 
+      const populatedMessage = await Message.findById(newMessage._id).populate('sender', 'name profilePhoto');
+
+      console.log(`[SOCKET] Message SAVED to DB: Room=${room}, MsgID=${newMessage._id}`);
+
       // Broadcast to room
-      socket.to(room).emit('receive_message', {
+      const emitData = {
         ...data,
-        room,
+        room: room.toString(),
         _id: newMessage._id,
-        createdAt: newMessage.createdAt
-      });
+        createdAt: newMessage.createdAt,
+        senderId: userId.toString(),
+        sender: populatedMessage?.sender
+      };
+
+      io.to(room.toString()).emit('receive_message', emitData);
+      
+      console.log(`[SOCKET] Message EMITTED to room ${room}`);
     } catch (error) {
-      console.error('Socket message save failed', error);
+      console.error('[SOCKET] Message handler failed', error);
     }
   });
 

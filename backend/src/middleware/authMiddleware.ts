@@ -32,6 +32,24 @@ export const protect = async (req: any, res: Response, next: NextFunction) => {
     }
 };
 
+export const optionalProtect = async (req: any, res: Response, next: NextFunction) => {
+    let token;
+
+    if (
+        req.headers.authorization &&
+        req.headers.authorization.startsWith('Bearer')
+    ) {
+        try {
+            token = req.headers.authorization.split(' ')[1];
+            const decoded: any = jwt.verify(token, process.env.JWT_SECRET as string);
+            req.user = await User.findById(decoded.id).select('-password');
+        } catch (error) {
+            console.error('Optional auth failed:', error.message);
+        }
+    }
+    next();
+};
+
 export const admin = (req: any, res: Response, next: NextFunction) => {
     if (req.user && req.user.role === 'admin') {
         next();

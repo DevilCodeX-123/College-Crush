@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -12,11 +12,7 @@ import { useQuery } from '@tanstack/react-query';
 import api from '../lib/api';
 import { useToast } from '../components/ui/use-toast';
 
-const socket = io(SOCKET_URL, {
-    auth: {
-        token: localStorage.getItem('token')
-    }
-});
+// Socket initialized inside component now
 
 const AnonymousChat = () => {
     const { user: currentUser } = useAuth();
@@ -31,8 +27,32 @@ const AnonymousChat = () => {
     const [revealSuccess, setRevealSuccess] = useState(false);
     const [friendRequestStatus, setFriendRequestStatus] = useState<'none' | 'sent' | 'received' | 'accepted'>('none');
 
+    const [socketConnected, setSocketConnected] = useState(false);
+    const socketRef = useRef<any>(null);
+
     // Chat state
     const [messageInput, setMessageInput] = useState('');
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const targetId = params.get('userId');
+        
+        if (targetId) {
+            const fetchTarget = async () => {
+                try {
+                    const { data } = await api.get(`/users/${targetId}`);
+                    setMatch({
+                        _id: `admin_session_${Date.now()}`,
+                        user: data,
+                        room: `direct_${currentUser?._id}_${targetId}` 
+                    });
+                } catch (err) {
+                    console.error('Failed to fetch target user', err);
+                }
+            };
+            fetchTarget();
+        }
+    }, [currentUser?._id]);
 
     const startMatch = async () => {
         setIsMatching(true);
@@ -68,10 +88,45 @@ const AnonymousChat = () => {
     });
 
     useEffect(() => {
-        if (match?.matchId) {
-            socket.emit('join_room', match.matchId);
+        const token = localStorage.getItem('token');
+        if (!token) return;
 
-            socket.on('match_disconnected', (data) => {
+        socketRef.current = io(SOCKET_URL, {
+            auth: { token }
+        });
+
+        socketRef.current.on('connect', () => {
+            setSocketConnected(true);
+            if (match?.matchId) {
+                socketRef.current.emit('join_room', match.matchId);
+            }
+        });
+
+        socketRef.current.on('disconnect', () => {
+            setSocketConnected(false);
+        });
+
+        return () => {
+            if (socketRef.current) {
+                socketRef.current.disconnect();
+            }
+        };
+    }, []);
+
+    useEffect(() => {
+        if (!socketRef.current) return;
+
+        if (match?.matchId) {
+            socketRef.current.emit('join_room', match.matchId);
+
+            socketRef.current.on('receive_message', (data: any) => {
+                console.log('[SHADOW] Received message:', data);
+                if (data.room === match.matchId) {
+                    refetchMessages();
+                }
+            });
+
+            socketRef.current.on('match_disconnected', (data: any) => {
                 if (data.matchId === match.matchId) {
                     setMatch(null);
                     setRevealed(false);
@@ -85,7 +140,7 @@ const AnonymousChat = () => {
                 }
             });
 
-            socket.on('match_request', (data) => {
+            socketRef.current.on('match_request', (data: any) => {
                 setMatch(data);
                 toast({
                     title: "Soul Connected! ✨",
@@ -103,15 +158,18 @@ const AnonymousChat = () => {
                 window.removeEventListener('beforeunload', handleBeforeUnload);
                 // Call disconnect API when leaving page or ending match
                 api.post('/chat/match/disconnect').catch(() => {});
-                socket.emit('leave_room', match.matchId);
-                socket.off('receive_message');
-                socket.off('match_disconnected');
+                if (socketRef.current) {
+                    socketRef.current.emit('leave_room', match.matchId);
+                    socketRef.current.off('receive_message');
+                    socketRef.current.off('match_disconnected');
+                    socketRef.current.off('match_request');
+                }
             };
         }
-    }, [match?.matchId, refetchMessages, toast]);
+    }, [match?.matchId, refetchMessages, toast, socketConnected]);
 
     const handleSend = async () => {
-        if (!messageInput.trim() || !match?.matchId) return;
+        if (!messageInput.trim() || !match?.matchId || !socketRef.current?.connected) return;
 
         const messageData = {
             room: match.matchId,
@@ -122,7 +180,7 @@ const AnonymousChat = () => {
         };
 
         try {
-            socket.emit('send_message', messageData);
+            socketRef.current.emit('send_message', messageData);
             setMessageInput('');
             refetchMessages();
         } catch (error) {
@@ -207,7 +265,7 @@ const AnonymousChat = () => {
     }, [match?.matchId, friendRequestStatus, currentUser?._id]);
 
     const handleReveal = async () => {
-        if (!match?.matchId) return;
+        if (!match?.matchId || !socketRef.current?.connected) return;
         try {
             // First send a system message notify
             const systemMsg = {
@@ -216,7 +274,7 @@ const AnonymousChat = () => {
                 content: `${currentUser.name} has requested to reveal identities! 🕵️`,
                 isGroup: false
             };
-            socket.emit('send_message', systemMsg);
+            socketRef.current.emit('send_message', systemMsg);
 
             const { data } = await api.put(`/chat/reveal/${match.matchId}`);
             setRevealed(true);
@@ -225,7 +283,7 @@ const AnonymousChat = () => {
                 setMatch((prev: any) => ({ ...prev, ...data }));
 
                 // Success system message
-                socket.emit('send_message', {
+                socketRef.current.emit('send_message', {
                     room: match.matchId,
                     senderId: null,
                     content: "Identity Mutual Revelation Successful! ✨ You can now connect in the Elite Circle.",

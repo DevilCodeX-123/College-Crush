@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { MessageSquare, User, Heart, Sparkles, Search, XCircle } from 'lucide-react';
@@ -10,9 +10,8 @@ import api from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { io } from 'socket.io-client';
 import { SOCKET_URL } from '../config';
-import { useEffect } from 'react';
 
-const socket = io(SOCKET_URL);
+// Socket initialized inside component with robust auth now
 
 const FriendCard = ({ friend, selected, onSelect, onCrush, onRemove }: { friend: any, selected: boolean, onSelect: () => void, onCrush: () => void, onRemove: () => void }) => (
     <Card
@@ -82,24 +81,57 @@ const Friends = () => {
         enabled: !!selectedFriend
     });
 
-    useEffect(() => {
-        if (selectedFriend?.id) {
-            socket.emit('join_room', selectedFriend.id);
+    const [socketConnected, setSocketConnected] = useState(false);
+    const socketRef = useRef<any>(null);
 
-            socket.on('receive_message', (data) => {
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        socketRef.current = io(SOCKET_URL, {
+            auth: { token }
+        });
+
+        socketRef.current.on('connect', () => {
+            setSocketConnected(true);
+            if (selectedFriend?.id) {
+                socketRef.current.emit('join_room', selectedFriend.id);
+            }
+        });
+
+        socketRef.current.on('disconnect', () => {
+            setSocketConnected(false);
+        });
+
+        return () => {
+            if (socketRef.current) {
+                socketRef.current.disconnect();
+            }
+        };
+    }, []);
+
+    useEffect(() => {
+        if (!socketRef.current) return;
+
+        if (selectedFriend?.id) {
+            socketRef.current.emit('join_room', selectedFriend.id);
+
+            socketRef.current.on('receive_message', (data: any) => {
                 if (data.room === selectedFriend.id) {
                     refetchMessages();
                 }
             });
 
             return () => {
-                socket.off('receive_message');
+                if (socketRef.current) {
+                    socketRef.current.off('receive_message');
+                }
             };
         }
-    }, [selectedFriend?.id, refetchMessages]);
+    }, [selectedFriend?.id, refetchMessages, socketConnected]);
 
     const handleSend = async () => {
-        if (!message.trim() || !selectedFriend) return;
+        if (!message.trim() || !selectedFriend || !socketRef.current?.connected) return;
 
         const messageData = {
             room: selectedFriend.id,
@@ -110,7 +142,7 @@ const Friends = () => {
         };
 
         try {
-            socket.emit('send_message', messageData);
+            socketRef.current.emit('send_message', messageData);
             setMessage('');
             refetchMessages();
         } catch (error) {

@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Card } from '../components/ui/card';
-import { ShieldAlert, Users, MessageSquare, Plus, Globe, Lock, Flag, Loader2, XCircle, Speaker, Activity } from 'lucide-react';
+import { ShieldAlert, Users, MessageSquare, Plus, Globe, Lock, Flag, Loader2, XCircle, Speaker, Activity, Search, Sparkles, Heart } from 'lucide-react';
 import api from '../lib/api';
 import UserAvatar from '../components/UserAvatar';
 import AdminQRRevealTab from '../components/admin/AdminQRRevealTab';
 
 
 const AdminDashboard = ({ initialTab = 'overview' }: { initialTab?: string }) => {
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState(initialTab);
     const [analytics, setAnalytics] = useState<any>(null);
     const [users, setUsers] = useState<any[]>([]);
@@ -127,14 +130,228 @@ const AdminDashboard = ({ initialTab = 'overview' }: { initialTab?: string }) =>
         }
     };
 
+    const [selectedUser, setSelectedUser] = useState<any>(null);
+    const [searchTerm, setSearchTerm] = useState('');
+
+    const filteredUsers = users.filter(u => 
+        u.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        u.email?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
     const handleUserAction = async (userId: string, action: string, durationDays?: number) => {
         if (!confirm(`Are you sure you want to ${action} this user?`)) return;
         try {
             await api.put(`/admin/users/${userId}/action`, { action, durationDays });
-            fetchUsers();
+            await fetchUsers(); // Refresh the list
+            
+            // If we're inspecting this user, update it
+            if (selectedUser?._id === userId) {
+                const updatedUser = users.find(u => u._id === userId);
+                if (updatedUser) setSelectedUser(updatedUser);
+            }
         } catch (error) {
             alert('Failed to execute action');
         }
+    };
+
+    const UserCard = ({ user }: { user: any }) => (
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{ y: -5, scale: 1.02 }}
+            onClick={() => setSelectedUser(user)}
+            className="group relative cursor-pointer"
+        >
+            <Card className="border-white/10 bg-white/5 backdrop-blur-3xl rounded-[2.5rem] p-8 hover:border-pink-500/30 transition-all flex flex-col items-center text-center shadow-2xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-pink-500/5 blur-3xl group-hover:bg-pink-500/10 transition-all"></div>
+                
+                <div className={`w-28 h-28 rounded-[2rem] bg-gradient-to-br ${user.gender === 'Female' ? 'from-pink-500' : 'from-blue-500'} to-white/10 p-[2px] mb-6 shadow-xl`}>
+                    <div className="w-full h-full rounded-[30px] bg-[#0a0a0c] flex items-center justify-center overflow-hidden">
+                        <UserAvatar src={user.profilePhoto} name={user.name} className="w-full h-full object-cover grayscale-[20%] group-hover:grayscale-0 transition-all duration-500" />
+                    </div>
+                </div>
+
+                <div className="inline-flex items-center px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[8px] uppercase tracking-widest font-black text-gray-500 mb-3">
+                    <Sparkles className="w-3 h-3 mr-2 text-yellow-500" /> Campus Elite
+                </div>
+
+                <h4 className="font-black text-xl mb-1 tracking-tight group-hover:text-pink-500 transition-colors uppercase">{user.name}</h4>
+                <p className="text-[10px] text-gray-500 font-bold tracking-widest truncate max-w-full opacity-60 italic mb-6">
+                    {user.bio || 'Whispering mysteries...'}
+                </p>
+
+                <div className="flex items-center space-x-6 w-full px-4 pt-4 border-t border-white/5">
+                    <div className="flex-1 text-center">
+                        <p className="text-xl font-black">{user.visitCount || 0}</p>
+                        <p className="text-[8px] uppercase tracking-widest text-gray-500 font-bold">Visits</p>
+                    </div>
+                    <div className="w-px h-8 bg-white/5"></div>
+                    <div className="flex-1 text-center">
+                        <p className="text-xl font-black">{user.crushCount || 0}</p>
+                        <p className="text-[8px] uppercase tracking-widest text-gray-500 font-bold">Crushes</p>
+                    </div>
+                </div>
+            </Card>
+        </motion.div>
+    );
+
+    const UserInspector = ({ user }: { user: any }) => {
+        const themeMap: any = {
+            male: 'from-blue-500',
+            female: 'from-pink-500',
+            other: 'from-purple-500'
+        };
+        const theme = themeMap[user.gender?.toLowerCase()] || themeMap.other;
+
+        return (
+            <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="space-y-8 animate-in fade-in"
+            >
+                <header className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/10">
+                    <button onClick={() => setSelectedUser(null)} className="flex items-center space-x-2 text-gray-400 hover:text-white transition-all group">
+                        <div className="p-2 rounded-xl bg-white/5 group-hover:bg-white/10">
+                            <Plus className="w-4 h-4 rotate-45" /> 
+                        </div>
+                        <span className="text-[10px] font-black uppercase tracking-widest">Back to Matrix</span>
+                    </button>
+                    <div className="flex items-center space-x-2">
+                         <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">Inspecting Citizen:</span>
+                         <span className="text-[10px] font-black uppercase tracking-widest text-blue-500">{user._id}</span>
+                    </div>
+                </header>
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                    {/* Ditto User Profile View */}
+                    <div className="lg:col-span-8 space-y-8">
+                        <Card className="border-white/10 bg-white/5 backdrop-blur-3xl rounded-[3rem] p-12 overflow-hidden relative border-t-white/20 shadow-2xl">
+                             <div className="relative z-10 flex flex-col md:flex-row items-center md:items-start space-y-8 md:space-y-0 md:space-x-12">
+                                <div className={`w-44 h-44 rounded-[2.5rem] bg-gradient-to-br ${theme} to-white/20 p-[2px] shadow-2xl`}>
+                                    <div className="w-full h-full rounded-[38px] bg-[#0a0a0c] flex items-center justify-center overflow-hidden">
+                                        <UserAvatar src={user.profilePhoto} name={user.name} className="w-full h-full object-cover" />
+                                    </div>
+                                </div>
+                                <div className="flex-1 text-center md:text-left pt-2">
+                                    <div className="inline-flex items-center px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-[10px] uppercase tracking-widest font-black text-gray-400 mb-4">
+                                        <Sparkles className="w-3 h-3 mr-2 text-blue-500" /> Elite Persona
+                                    </div>
+                                    <h1 className="text-6xl font-black mb-4 tracking-tighter leading-none">{user.name}</h1>
+                                    <p className="text-gray-400 text-lg font-light leading-relaxed max-w-lg">
+                                        {user.bio || "This soul hasn't whispered their story yet..."}
+                                    </p>
+                                    <div className="flex flex-wrap gap-2 mt-8 justify-center md:justify-start">
+                                        {user.interests?.map((interest: string, i: number) => (
+                                            <span key={i} className="px-5 py-2 rounded-xl bg-white/5 border border-white/10 text-xs font-bold text-gray-300">
+                                                {interest}
+                                            </span>
+                                        ))}
+                                    </div>
+                                    <div className="flex flex-wrap gap-4 mt-12 justify-center md:justify-start">
+                                        <button 
+                                            onClick={async () => {
+                                                try {
+                                                    await api.post('/crushes', { receiverId: user._id, message: 'I have a crush on you! ❤️' });
+                                                    alert('Crush sent from Admin persona! ✨');
+                                                } catch (err: any) {
+                                                    alert(err.response?.data?.message || 'Error sending crush');
+                                                }
+                                            }}
+                                            className="bg-pink-600 hover:bg-pink-500 rounded-2xl px-10 h-16 text-lg font-black shadow-xl shadow-black/20 border border-t-white/10 transition-all hover:scale-105 active:scale-95 flex items-center justify-center"
+                                        >
+                                            <Heart className="w-5 h-5 mr-3 fill-white" /> Send Crush
+                                        </button>
+                                        <button 
+                                            onClick={() => navigate(`/chat/anonymous?userId=${user._id}`)}
+                                            className="border-white/10 bg-white/5 backdrop-blur-md rounded-2xl px-10 h-16 text-lg font-bold hover:bg-white/10 transition-all flex items-center justify-center"
+                                        >
+                                            <MessageSquare className="w-5 h-5 mr-3" /> Anonymous DM
+                                        </button>
+                                    </div>
+                                </div>
+                             </div>
+                        </Card>
+
+                        {/* Admin Command Console */}
+                        <Card className="border-white/10 bg-white/5 backdrop-blur-3xl rounded-[3rem] p-10 border-t-white/20 shadow-2xl">
+                            <h4 className="text-[10px] uppercase tracking-[0.2em] font-black text-gray-500 mb-8 flex items-center">
+                                <ShieldAlert className="w-4 h-4 mr-3 text-red-500" /> Tactical Override Console
+                            </h4>
+                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                                <button onClick={() => handleUserAction(user._id, 'warn')} className="flex flex-col items-center justify-center p-6 bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/20 rounded-3xl transition-all group">
+                                    <ShieldAlert className="w-8 h-8 mb-3 text-yellow-500 group-hover:scale-110 transition-transform" />
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-yellow-500">Issue Strike</span>
+                                </button>
+                                <button onClick={() => handleUserAction(user._id, 'banTemp', 3)} className="flex flex-col items-center justify-center p-6 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/20 rounded-3xl transition-all group">
+                                    <Activity className="w-8 h-8 mb-3 text-orange-500 group-hover:scale-110 transition-transform" />
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-orange-500">Ban (3d)</span>
+                                </button>
+                                <button onClick={() => handleUserAction(user._id, 'banPerm')} className="flex flex-col items-center justify-center p-6 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-3xl transition-all group">
+                                    <XCircle className="w-8 h-8 mb-3 text-red-500 group-hover:scale-110 transition-transform" />
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-red-500">Perm Ban</span>
+                                </button>
+                                {user.banStatus !== 'none' ? (
+                                    <button onClick={() => handleUserAction(user._id, 'unban')} className="flex flex-col items-center justify-center p-6 bg-green-500/10 hover:bg-green-500/20 border border-green-500/20 rounded-3xl transition-all group">
+                                        <Plus className="w-8 h-8 mb-3 text-green-500 group-hover:scale-110 transition-transform" />
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-green-500">Restitute</span>
+                                    </button>
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center p-6 bg-white/5 border border-white/10 rounded-3xl opacity-30 grayscale cursor-not-allowed">
+                                        <Plus className="w-8 h-8 mb-3 text-gray-500" />
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">No Action</span>
+                                    </div>
+                                )}
+                            </div>
+                        </Card>
+                    </div>
+
+                    {/* Stats Sidebar */}
+                    <div className="lg:col-span-4 space-y-8">
+                        <Card className="border-white/10 bg-white/5 backdrop-blur-3xl rounded-[3rem] p-10 text-center border-t-white/20 shadow-2xl space-y-12">
+                            <div>
+                                <div className="w-16 h-16 rounded-3xl bg-yellow-500/10 flex items-center justify-center mx-auto mb-6 shadow-inner ring-1 ring-yellow-500/20">
+                                    <Sparkles className="w-8 h-8 text-yellow-500" />
+                                </div>
+                                <p className="text-5xl font-black tracking-tighter">{user.visitCount || 0}</p>
+                                <p className="text-[10px] uppercase tracking-[0.3em] text-gray-500 font-extrabold mt-3">Elite Power</p>
+                            </div>
+
+                            <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+
+                            <div>
+                                <div className="w-16 h-16 rounded-3xl bg-pink-500/10 flex items-center justify-center mx-auto mb-6 shadow-inner ring-1 ring-pink-500/20">
+                                    <Heart className="w-8 h-8 text-pink-500" />
+                                </div>
+                                <p className="text-5xl font-black tracking-tighter">{user.crushCount || 0}</p>
+                                <p className="text-[10px] uppercase tracking-[0.3em] text-gray-500 font-extrabold mt-3">Total Crushes</p>
+                            </div>
+
+                            <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+
+                            <div className="text-left space-y-6 pt-4">
+                                <div>
+                                    <p className="text-[8px] uppercase tracking-[0.2em] font-black text-gray-500 mb-1">Status Designation</p>
+                                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${user.banStatus !== 'none' ? 'bg-red-500/10 text-red-500 border border-red-500/20' : 'bg-green-500/10 text-green-500 border border-green-500/20'}`}>
+                                        {user.banStatus === 'none' ? 'Active Network Citizen' : `${user.banStatus} Restricted`}
+                                    </span>
+                                </div>
+                                <div>
+                                    <p className="text-[8px] uppercase tracking-[0.2em] font-black text-gray-500 mb-1">Affiliation</p>
+                                    <p className="font-bold text-gray-200">{user.branch} • Year {user.year}</p>
+                                </div>
+                            </div>
+                        </Card>
+
+                        {/* Reputation Card */}
+                        <Card className="border-white/10 bg-gradient-to-br from-white/5 to-white/10 rounded-[2.5rem] p-10 text-center relative overflow-hidden group shadow-xl">
+                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                             <h5 className="text-[10px] uppercase tracking-[0.2em] font-black text-gray-400 mb-2">Campus Reputation</h5>
+                             <div className="text-2xl font-black bg-gradient-to-r from-yellow-500 via-white to-yellow-500 bg-clip-text text-transparent uppercase tracking-tighter">Campus Legend</div>
+                        </Card>
+                    </div>
+                </div>
+            </motion.div>
+        );
     };
 
     if (loading) return (
@@ -181,58 +398,49 @@ const AdminDashboard = ({ initialTab = 'overview' }: { initialTab?: string }) =>
                         </div>
                     </div>
                 )}
-
                 {/* 2. USERS TAB */}
                 {activeTab === 'users' && (
-                    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
-                        <header className="flex justify-between items-center">
-                            <div>
-                                <h2 className="text-3xl font-black">User Matrix</h2>
-                                <p className="text-gray-500 text-sm mt-1">Total dominion over {users.length} accounts.</p>
-                            </div>
-                        </header>
+                    <AnimatePresence mode="wait">
+                        {!selectedUser ? (
+                            <motion.div
+                                key="grid"
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: 20 }}
+                                className="space-y-8"
+                            >
+                                <header className="flex justify-between items-center">
+                                    <div>
+                                        <h2 className="text-3xl font-black">User Matrix</h2>
+                                        <p className="text-gray-500 text-sm mt-1">Total dominion over {users.length} accounts.</p>
+                                    </div>
+                                    <div className="flex bg-white/5 p-1 rounded-xl border border-white/5 items-center">
+                                         <Search className="w-4 h-4 m-2 text-gray-500" />
+                                         <input 
+                                            type="text" 
+                                            value={searchTerm}
+                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                            placeholder="Search citizens..." 
+                                            className="bg-transparent border-0 outline-none text-xs w-48 placeholder:text-gray-600 text-white" 
+                                         />
+                                    </div>
+                                </header>
 
-                        <div className="bg-white/[0.02] border border-white/5 rounded-3xl overflow-x-auto backdrop-blur-xl">
-                            <table className="w-full text-left border-collapse">
-                                <thead>
-                                    <tr className="bg-white/5 border-b border-white/5 text-xs uppercase tracking-widest text-gray-400">
-                                        <th className="p-4 font-black">User</th>
-                                        <th className="p-4 font-black">Status</th>
-                                        <th className="p-4 font-black">Warnings</th>
-                                        <th className="p-4 font-black text-right">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-white/5">
-                                    {users.map((user) => (
-                                        <tr key={user._id} className="hover:bg-white/5 transition-colors group">
-                                            <td className="p-4 flex items-center space-x-4">
-                                                <UserAvatar src={user.profilePhoto} name={user.name} className="w-10 h-10 rounded-full" />
-                                                <div>
-                                                    <p className="font-bold">{user.name}</p>
-                                                    <p className="text-xs text-gray-500">{user.email}</p>
-
-                                                </div>
-                                            </td>
-                                            <td className="p-4">
-                                                <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${user.banStatus !== 'none' ? 'bg-red-500/10 text-red-500' : 'bg-green-500/10 text-green-500'}`}>
-                                                    {user.banStatus === 'none' ? 'Active' : user.banStatus}
-                                                </span>
-                                            </td>
-                                            <td className="p-4 font-black text-red-500">{user.warnings > 0 ? `${user.warnings} Strikes` : '-'}</td>
-                                            <td className="p-4 text-right space-x-2">
-                                                <button onClick={() => handleUserAction(user._id, 'warn')} className="px-3 py-1.5 rounded-lg bg-yellow-500/10 text-yellow-500 text-xs font-black uppercase hover:bg-yellow-500/20">Warn</button>
-                                                <button onClick={() => handleUserAction(user._id, 'banTemp', 3)} className="px-3 py-1.5 rounded-lg bg-orange-500/10 text-orange-500 text-xs font-black uppercase hover:bg-orange-500/20">Ban (3d)</button>
-                                                <button onClick={() => handleUserAction(user._id, 'banPerm')} className="px-3 py-1.5 rounded-lg bg-red-500/10 text-red-500 text-xs font-black uppercase hover:bg-red-500/20">Perm Ban</button>
-                                                {user.banStatus !== 'none' && (
-                                                    <button onClick={() => handleUserAction(user._id, 'unban')} className="px-3 py-1.5 rounded-lg bg-gray-500/10 text-gray-400 text-xs font-black uppercase hover:bg-gray-500/20">Unban</button>
-                                                )}
-                                            </td>
-                                        </tr>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                    {filteredUsers.map((user: any) => (
+                                        <UserCard key={user._id} user={user} />
                                     ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                                    {filteredUsers.length === 0 && (
+                                        <div className="col-span-full py-20 text-center text-gray-500 font-bold uppercase tracking-widest border border-dashed border-white/10 rounded-[3rem]">
+                                            Zero citizens detected in the core.
+                                        </div>
+                                    )}
+                                </div>
+                            </motion.div>
+                        ) : (
+                            <UserInspector key="inspector" user={selectedUser} />
+                        )}
+                    </AnimatePresence>
                 )}
 
                 {/* 3. REPORTS TAB */}

@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardHeader } from '../components/ui/card';
-import { Heart, Sparkles, User, ShieldCheck, MessageSquare, Send, X } from 'lucide-react';
+import { Heart, Sparkles, User, ShieldCheck, MessageSquare, Send, X, Trash2 } from 'lucide-react';
 import api from '../lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '../components/ui/button';
@@ -10,13 +10,10 @@ import { useAuth } from '../context/AuthContext';
 import { io } from 'socket.io-client';
 import { SOCKET_URL } from '../config';
 
-const socket = io(SOCKET_URL);
+// Socket initialized inside component now for robust auth
 
 const Crushes = () => {
     const { user: currentUser } = useAuth();
-    const [sent, setSent] = useState<any[]>([]);
-    const [received, setReceived] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
     const [selectedMatch, setSelectedMatch] = useState<any>(null);
     const [messageInput, setMessageInput] = useState('');
 
@@ -42,24 +39,78 @@ const Crushes = () => {
         }
     });
 
-    useEffect(() => {
-        if (selectedMatch?.chatRoom) {
-            socket.emit('join_room', selectedMatch.chatRoom);
+    const deleteMutation = useMutation({
+        mutationFn: async (id: string) => {
+            return api.delete(`/crushes/${id}`);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['crushes'] });
+        }
+    });
 
-            socket.on('receive_message', (data) => {
+    const [socketConnected, setSocketConnected] = useState(false);
+    const socketRef = useRef<any>(null);
+
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        socketRef.current = io(SOCKET_URL, {
+            auth: { token }
+        });
+
+        socketRef.current.on('connect', () => {
+            setSocketConnected(true);
+            if (selectedMatch?.chatRoom) {
+                socketRef.current.emit('join_room', selectedMatch.chatRoom);
+            }
+        });
+
+        socketRef.current.on('disconnect', () => {
+            setSocketConnected(false);
+        });
+
+        socketRef.current.on('crush_updated', () => {
+            queryClient.invalidateQueries({ queryKey: ['crushes'] });
+        });
+
+        socketRef.current.on('crush_deleted', (data: any) => {
+            queryClient.invalidateQueries({ queryKey: ['crushes'] });
+            setSelectedMatch((prev: any) => {
+                if (prev && prev._id === data.id) return null;
+                return prev;
+            });
+        });
+
+        return () => {
+            if (socketRef.current) {
+                socketRef.current.disconnect();
+            }
+        };
+    }, []);
+
+    useEffect(() => {
+        if (!socketRef.current) return;
+
+        if (selectedMatch?.chatRoom) {
+            socketRef.current.emit('join_room', selectedMatch.chatRoom);
+
+            socketRef.current.on('receive_message', (data: any) => {
                 if (data.room === selectedMatch.chatRoom) {
                     refetchMessages();
                 }
             });
 
             return () => {
-                socket.off('receive_message');
+                if (socketRef.current) {
+                    socketRef.current.off('receive_message');
+                }
             };
         }
-    }, [selectedMatch?.chatRoom]);
+    }, [selectedMatch?.chatRoom, refetchMessages, socketConnected]);
 
     const handleSend = async () => {
-        if (!messageInput.trim() || !selectedMatch?.chatRoom) return;
+        if (!messageInput.trim() || !selectedMatch?.chatRoom || !socketRef.current?.connected) return;
 
         const messageData = {
             room: selectedMatch.chatRoom,
@@ -70,30 +121,24 @@ const Crushes = () => {
         };
 
         try {
-            socket.emit('send_message', messageData);
+            socketRef.current.emit('send_message', messageData);
             setMessageInput('');
-            // Optimistically update or just let the socket listener refetch
             refetchMessages();
         } catch (error) {
             console.error('Send failed', error);
         }
     };
 
-    useEffect(() => {
-        const fetchCrushes = async () => {
-            try {
-                const { data } = await api.get('/crushes');
-                setSent(data.sent);
-                setReceived(data.received);
-            } catch (error) {
-                console.error('Error fetching crushes', error);
-            } finally {
-                setLoading(false);
-            }
-        };
+    const { data: crushesData, isLoading: loading } = useQuery({
+        queryKey: ['crushes'],
+        queryFn: async () => {
+            const { data } = await api.get('/crushes');
+            return data;
+        }
+    });
 
-        fetchCrushes();
-    }, []);
+    const sent = crushesData?.sent || [];
+    const received = crushesData?.received || [];
 
     if (loading) return <div className="p-8 text-center text-gray-500">Loading your crushes...</div>;
 
@@ -132,17 +177,47 @@ const Crushes = () => {
                                             <p className="text-[10px] text-gray-500 uppercase tracking-widest">{crush.revealedToReceiver && crush.revealedToSender ? 'Matched & Revealed' : (crush.isMatch ? 'It\'s a Match! ✨' : 'Secret Admirer')}</p>
                                         </div>
                                     </div>
-                                    {(crush.isMatch || crush.chatRoom) && <ShieldCheck className="w-5 h-5 text-blue-400" />}
+                                    <div className="flex items-center space-x-2">
+                                        {(crush.isMatch || crush.chatRoom) && <ShieldCheck className="w-5 h-5 text-blue-400" />}
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-8 w-8 text-gray-500 hover:text-red-500 hover:bg-red-500/10"
+                                            onClick={() => {
+                                                if (window.confirm("Are you sure you want to delete this interaction?")) {
+                                                    deleteMutation.mutate(crush._id);
+                                                }
+                                            }}
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </Button>
+                                    </div>
                                 </CardHeader>
                                 <p className="text-gray-300 font-light italic">"{crush.message}"</p>
-                                {crush.chatRoom && (
-                                    <button
-                                        onClick={() => setSelectedMatch(crush)}
-                                        className="mt-4 w-full py-2 bg-gradient-to-r from-pink-600 to-blue-600 rounded-xl text-xs font-black uppercase tracking-tighter hover:scale-[1.02] transition-transform"
-                                    >
-                                        Open Secret Chat
-                                    </button>
-                                )}
+                                
+                                <div className="mt-6 flex flex-col gap-3">
+                                    {!crush.revealedToSender && (
+                                        <button
+                                            onClick={() => {
+                                                if (window.confirm("Are you sure you want to reveal your identity?")) {
+                                                    revealMutation.mutate(crush._id);
+                                                }
+                                            }}
+                                            className="w-full py-3 bg-white/5 border border-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all flex items-center justify-center"
+                                        >
+                                            <ShieldCheck className="w-4 h-4 mr-2 text-green-500" /> Reveal My Identity
+                                        </button>
+                                    )}
+
+                                    {crush.chatRoom && (
+                                        <button
+                                            onClick={() => setSelectedMatch(crush)}
+                                            className="w-full py-3 bg-gradient-to-r from-pink-600 to-blue-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-[1.02] transition-transform shadow-lg shadow-pink-500/10"
+                                        >
+                                            Open Secret Chat
+                                        </button>
+                                    )}
+                                </div>
                             </Card>
                         </motion.div>
                     ))}
@@ -172,14 +247,28 @@ const Crushes = () => {
                                             <p className="text-[10px] text-gray-500 uppercase tracking-widest">{crush.revealedToReceiver && crush.revealedToSender ? 'Identities Revealed' : (crush.isMatch ? 'Matched!' : 'Sent Anonymously')}</p>
                                         </div>
                                     </div>
-                                    {crush.chatRoom && (
-                                        <button
-                                            onClick={() => setSelectedMatch(crush)}
-                                            className="p-2 hover:bg-white/5 rounded-full transition-colors"
+                                    <div className="flex items-center space-x-2">
+                                        {crush.chatRoom && (
+                                            <button
+                                                onClick={() => setSelectedMatch(crush)}
+                                                className="p-2 hover:bg-white/5 rounded-full text-blue-400 transition-colors"
+                                            >
+                                                <MessageSquare className="w-4 h-4" />
+                                            </button>
+                                        )}
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-8 w-8 text-gray-500 hover:text-red-500 hover:bg-red-500/10"
+                                            onClick={() => {
+                                                if (window.confirm("Are you sure you want to delete this interaction?")) {
+                                                    deleteMutation.mutate(crush._id);
+                                                }
+                                            }}
                                         >
-                                            <MessageSquare className="w-4 h-4 text-blue-400" />
-                                        </button>
-                                    )}
+                                            <Trash2 className="w-4 h-4" />
+                                        </Button>
+                                    </div>
                                 </CardHeader>
                                 <p className="text-gray-300 font-light italic">"{crush.message}"</p>
                                 {crush.chatRoom && (
@@ -188,6 +277,18 @@ const Crushes = () => {
                                         className="mt-4 w-full py-2 bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl text-xs font-black uppercase tracking-tighter hover:scale-[1.02] transition-transform"
                                     >
                                         Chat Secretly
+                                    </button>
+                                )}
+                                {!crush.revealedToReceiver && (
+                                    <button
+                                        onClick={() => {
+                                            if (window.confirm("Are you sure you want to reveal your identity?")) {
+                                                revealMutation.mutate(crush._id);
+                                            }
+                                        }}
+                                        className="mt-4 w-full py-3 bg-white/5 border border-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all flex items-center justify-center"
+                                    >
+                                        <ShieldCheck className="w-4 h-4 mr-2 text-blue-500" /> Reveal My Identity
                                     </button>
                                 )}
                             </Card>
@@ -216,21 +317,32 @@ const Crushes = () => {
                                 <div className="flex items-center space-x-4">
                                     <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-pink-500 to-blue-500 p-[1px]">
                                         <div className="w-full h-full rounded-[11px] bg-[#0a0a0c] flex items-center justify-center overflow-hidden">
-                                            {/* Logic: if fully revealed, show photo. Else show icon */}
-                                            {selectedMatch.revealedToReceiver && selectedMatch.revealedToSender ? (
-                                                <img
-                                                    src={selectedMatch.sender?._id === selectedMatch.receiver?._id ? selectedMatch.receiver?.profilePhoto : (selectedMatch.sender?.name === 'Anonymous Soul' ? selectedMatch.receiver?.profilePhoto : selectedMatch.sender?.profilePhoto)}
-                                                    alt=""
-                                                    className="w-full h-full object-cover"
-                                                />
-                                            ) : (
-                                                <Sparkles className="w-6 h-6 text-pink-500" />
-                                            )}
+                                            {(() => {
+                                                const senderIdStr = typeof selectedMatch.sender === 'object' ? selectedMatch.sender._id : selectedMatch.sender;
+                                                const amISender = senderIdStr === currentUser?._id;
+                                                const otherUser = amISender ? selectedMatch.receiver : selectedMatch.sender;
+                                                const knowOtherUser = amISender ? selectedMatch.revealedToSender : selectedMatch.revealedToReceiver;
+                                                return knowOtherUser && otherUser?.profilePhoto ? (
+                                                    <img
+                                                        src={otherUser.profilePhoto}
+                                                        alt=""
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                ) : (
+                                                    <Sparkles className="w-6 h-6 text-pink-500" />
+                                                );
+                                            })()}
                                         </div>
                                     </div>
                                     <div>
                                         <h3 className="font-black">
-                                            {selectedMatch.revealedToReceiver && selectedMatch.revealedToSender ? 'Secret Match Unveiled' : 'Secret Chat'}
+                                            {(() => {
+                                                const senderIdStr = typeof selectedMatch.sender === 'object' ? selectedMatch.sender._id : selectedMatch.sender;
+                                                const amISender = senderIdStr === currentUser?._id;
+                                                const otherUser = amISender ? selectedMatch.receiver : selectedMatch.sender;
+                                                const knowOtherUser = amISender ? selectedMatch.revealedToSender : selectedMatch.revealedToReceiver;
+                                                return knowOtherUser ? otherUser?.name : 'Secret Identity';
+                                            })()}
                                         </h3>
                                         <p className="text-[10px] text-gray-500 uppercase tracking-widest leading-none mt-1">
                                             {selectedMatch.revealedToReceiver && selectedMatch.revealedToSender ? 'Connection Established' : 'Shadow Whisper'}
@@ -239,17 +351,26 @@ const Crushes = () => {
                                 </div>
                                 <div className="flex items-center space-x-3">
                                     {/* Reveal Button Logic */}
-                                    {(!(selectedMatch.revealedToReceiver && selectedMatch.revealedToSender)) && (
-                                        <Button
-                                            size="sm"
-                                            variant="outline"
-                                            onClick={() => revealMutation.mutate(selectedMatch._id)}
-                                            className="h-9 px-4 rounded-xl border-pink-500/50 text-pink-500 hover:bg-pink-500 hover:text-white transition-all text-[10px] font-black uppercase tracking-widest"
-                                        >
-                                            <Sparkles className="w-3 h-3 mr-2" />
-                                            Reveal Name
-                                        </Button>
-                                    )}
+                                    {(() => {
+                                        const senderIdStr = typeof selectedMatch.sender === 'object' ? selectedMatch.sender._id : selectedMatch.sender;
+                                        const amISender = senderIdStr === currentUser?._id;
+                                        const shouldShowButton = amISender ? !selectedMatch.revealedToReceiver : !selectedMatch.revealedToSender;
+                                        return shouldShowButton ? (
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => {
+                                                    if (window.confirm("Are you sure you want to reveal your identity?")) {
+                                                        revealMutation.mutate(selectedMatch._id);
+                                                    }
+                                                }}
+                                                className="h-9 px-4 rounded-xl border-pink-500/50 text-pink-500 hover:bg-pink-500 hover:text-white transition-all text-[10px] font-black uppercase tracking-widest"
+                                            >
+                                                <Sparkles className="w-3 h-3 mr-2" />
+                                                Reveal Name
+                                            </Button>
+                                        ) : null;
+                                    })()}
                                     <button
                                         onClick={() => setSelectedMatch(null)}
                                         className="p-2 hover:bg-white/5 rounded-xl transition-colors"
@@ -266,13 +387,16 @@ const Crushes = () => {
                                 </div>
                                 {messages?.slice().reverse().map((msg: any) => {
                                     const isOwn = msg.sender?._id === currentUser?._id;
-                                    const isRevealed = selectedMatch.revealedToReceiver && selectedMatch.revealedToSender;
+                                    const senderIdStr = typeof selectedMatch.sender === 'object' ? selectedMatch.sender._id : selectedMatch.sender;
+                                    const amISender = senderIdStr === currentUser?._id;
+                                    const otherUser = amISender ? selectedMatch.receiver : selectedMatch.sender;
+                                    const knowOtherUser = amISender ? selectedMatch.revealedToSender : selectedMatch.revealedToReceiver;
 
-                                    let displayName = "Anonymous Soul";
+                                    let displayName = "Secret Admirer";
                                     if (isOwn) {
                                         displayName = "You";
-                                    } else if (isRevealed) {
-                                        displayName = msg.sender?.name;
+                                    } else if (knowOtherUser) {
+                                        displayName = otherUser?.name || msg.sender?.name;
                                     }
 
                                     return (

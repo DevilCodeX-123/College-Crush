@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Send, Sparkles, ShieldAlert, Smile, Zap, Flame, Ghost } from 'lucide-react';
+import { Heart, Send, Sparkles, ShieldAlert, Zap, Flame, Ghost } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Textarea } from '../components/ui/textarea';
 import { Card, CardHeader, CardContent, CardFooter } from '../components/ui/card';
@@ -16,6 +16,9 @@ const Confessions = () => {
   const [fetching, setFetching] = useState(true);
   const { user } = useAuth();
   const { toast } = useToast();
+
+  const [selectedConfession, setSelectedConfession] = useState<any>(null);
+  const [crushMessage, setCrushMessage] = useState('');
 
   const fetchConfessions = async () => {
     try {
@@ -169,11 +172,13 @@ const Confessions = () => {
                   <Card className="border-white/5 bg-white/[0.03] backdrop-blur-xl rounded-[2rem] hover:border-white/10 transition-all group overflow-hidden">
                     <CardHeader className="pb-4 pt-8 px-8 flex flex-row items-center justify-between">
                       <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-white/10 to-white/5 flex items-center justify-center border border-white/10 shadow-inner">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-white/10 to-white/5 flex items-center justify-center border border-white/10 shadow-inner overflow-hidden">
                           <Zap className="w-5 h-5 text-gray-400" />
                         </div>
                         <div>
-                          <p className="text-white text-sm font-bold">Anonymous Student</p>
+                          <p className="text-sm font-bold text-white">
+                            Anonymous Student
+                          </p>
                           <p className="text-[10px] text-gray-600 uppercase tracking-wider font-black">
                             {formatDistanceToNow(new Date(confession.createdAt))} ago
                           </p>
@@ -211,16 +216,6 @@ const Confessions = () => {
                         </button>
 
                         <button
-                          onClick={() => handleReact(confession._id, 'funny')}
-                          className="flex items-center space-x-2 text-blue-500/60 hover:text-blue-500 transition-colors group/btn"
-                        >
-                          <div className="p-2 rounded-full group-hover/btn:bg-blue-500/10 transition-colors">
-                            <Smile className={`w-5 h-5 ${confession.reactedUsers?.some((r: any) => r.user === user?._id && r.emoji === 'funny') ? 'fill-blue-500' : ''}`} />
-                          </div>
-                          <span className="text-sm font-bold">{confession.reactions?.funny || 0}</span>
-                        </button>
-
-                        <button
                           onClick={() => handleReact(confession._id, 'fire')}
                           className="flex items-center space-x-2 text-orange-500/60 hover:text-orange-500 transition-colors group/btn"
                         >
@@ -228,6 +223,21 @@ const Confessions = () => {
                             <Flame className={`w-5 h-5 ${confession.reactedUsers?.some((r: any) => r.user === user?._id && r.emoji === 'fire') ? 'fill-orange-500' : ''}`} />
                           </div>
                           <span className="text-sm font-bold">{confession.reactions?.fire || 0}</span>
+                        </button>
+                      </div>
+
+                      <div className="flex-1 text-right mt-6">
+                        <button
+                          onClick={() => {
+                            if (confession.author === user?._id) {
+                                toast({ title: "Self Love is Great", description: "But you can't send a crush to yourself! ❤️", variant: "destructive" });
+                                return;
+                            }
+                            setSelectedConfession(confession);
+                          }}
+                          className="px-6 py-2 rounded-xl bg-gradient-to-r from-pink-600 to-rose-600 text-white text-xs font-black uppercase tracking-widest shadow-lg shadow-pink-500/20 hover:scale-105 active:scale-95 transition-all"
+                        >
+                          Send Crush
                         </button>
                       </div>
                     </CardFooter>
@@ -238,6 +248,75 @@ const Confessions = () => {
           </AnimatePresence>
         </div>
       </div>
+
+      {/* Crush Modal */}
+      <AnimatePresence>
+        {selectedConfession && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    onClick={() => setSelectedConfession(null)}
+                    className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+                />
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                    className="relative w-full max-w-lg bg-[#0a0a0c] border border-white/10 rounded-[2.5rem] p-10 overflow-hidden shadow-2xl"
+                >
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-pink-500/10 blur-3xl"></div>
+                    
+                    <h3 className="text-2xl font-black text-white mb-2">Manifest a Crush ✨</h3>
+                    <p className="text-gray-400 text-sm mb-8 leading-relaxed">
+                        Your name will be <span className="text-pink-500 font-bold">REVEALED</span> to the author. 
+                        Choose your words carefully, legend.
+                    </p>
+
+                    <div className="bg-white/5 p-4 rounded-xl border border-white/5 mb-6 italic text-gray-400 text-sm">
+                        "{selectedConfession.content.substring(0, 100)}..."
+                    </div>
+
+                    <Textarea 
+                        value={crushMessage}
+                        onChange={(e) => setCrushMessage(e.target.value)}
+                        placeholder="I've been thinking about this confession since I read it..."
+                        className="bg-white/5 border-white/10 rounded-2xl min-h-[120px] mb-8 text-white placeholder:text-gray-600"
+                    />
+
+                    <div className="flex gap-4">
+                        <Button
+                            variant="ghost"
+                            onClick={() => setSelectedConfession(null)}
+                            className="flex-1 h-14 rounded-2xl text-gray-400 hover:text-white"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={async () => {
+                                try {
+                                    setLoading(true);
+                                    const { data } = await api.post(`/confessions/${selectedConfession._id}/crush`, { message: crushMessage });
+                                    toast({ title: data.type === 'chat' ? "Reply Sent! 💬" : "Crush Manifested! ✨", description: data.crush?.receiver?.name ? `Sent to ${data.crush.receiver.name}` : data.message });
+                                    setSelectedConfession(null);
+                                    setCrushMessage('');
+                                } catch (err: any) {
+                                    toast({ title: "Manifestation Failed", description: err.response?.data?.message || "Internal sync error", variant: "destructive" });
+                                } finally {
+                                    setLoading(false);
+                                }
+                            }}
+                            disabled={loading || !crushMessage.trim()}
+                            className="flex-1 h-14 rounded-2xl bg-gradient-to-r from-pink-600 to-rose-600 font-black shadow-xl shadow-pink-500/20"
+                        >
+                            {loading ? 'Sending...' : 'Send Direct Crush'}
+                        </Button>
+                    </div>
+                </motion.div>
+            </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

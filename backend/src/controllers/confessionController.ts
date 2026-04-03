@@ -1,6 +1,10 @@
 import { Request, Response } from 'express';
 import Confession from '../models/Confession.js';
 import Report from '../models/Report.js';
+import Crush from '../models/Crush.js';
+import Message from '../models/Message.js';
+import User from '../models/User.js';
+import { io } from '../server.js';
 
 interface CustomRequest extends Request {
     user?: any;
@@ -33,9 +37,14 @@ export const createConfession = async (req: CustomRequest, res: Response) => {
 // @desc    Get all confessions
 // @route   GET /api/confessions
 // @access  Public
-export const getConfessions = async (req: Request, res: Response) => {
-    const confessions = await Confession.find({}).sort({ createdAt: -1 });
-    res.json(confessions);
+export const getConfessions = async (req: CustomRequest, res: Response) => {
+    try {
+        const confessions = await Confession.find({}).sort({ createdAt: -1 });
+        res.json(confessions);
+    } catch (error) {
+        console.error('Error fetching confessions:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
 };
 
 // @desc    React to a confession
@@ -142,5 +151,126 @@ export const reportConfession = async (req: CustomRequest, res: Response) => {
         res.status(201).json({ message: 'Confession reported successfully' });
     } catch (error) {
         res.status(500).json({ message: 'Error reporting confession' });
+    }
+};
+
+// @desc    Send a crush to confession author
+// @route   POST /api/confessions/:id/crush
+// @access  Private
+export const sendConfessionCrush = async (req: CustomRequest, res: Response) => {
+    const { message } = req.body;
+    const senderId = req.user._id;
+
+    if (!message) {
+        return res.status(400).json({ message: 'Crush message is required' });
+    }
+
+    try {
+        const confession = await Confession.findById(req.params.id);
+
+        if (!confession) {
+            return res.status(404).json({ message: 'Confession not found' });
+        }
+
+        const receiverId = confession.author;
+
+        if (!receiverId) {
+            return res.status(400).json({ message: 'Confession author not found' });
+        }
+
+        if (receiverId.toString() === senderId.toString()) {
+            return res.status(400).json({ message: 'You cannot send a crush to yourself' });
+        }
+
+        const roomID = [senderId, receiverId].sort().join('_');
+
+        // 1. Find if a interaction already exists in ANY direction
+        let crush = await Crush.findOne({
+            $or: [
+                { sender: senderId, receiver: receiverId },
+                { sender: receiverId, receiver: senderId }
+            ]
+        });
+
+        if (crush) {
+            const isOriginalSender = crush.sender.toString() === senderId.toString();
+            const wasMatch = crush.isMatch;
+
+            if (!isOriginalSender && !crush.isMatch) {
+                // MATCH SCENARIO: Receiver is now crushing back
+                crush.isMatch = true;
+                crush.revealedToReceiver = true; 
+                crush.revealedToSender = true;   
+                crush.message = message;
+                crush.chatRoom = crush.chatRoom || roomID;
+            } else {
+                crush.message = message;
+            }
+            
+            // ALWAYS create a message record if we have a room
+            if (crush.chatRoom) {
+                const newMessage = await Message.create({
+                    sender: senderId,
+                    content: wasMatch ? `[FOLLOW-UP]: ${message}` : `[CRUSH REPLY]: ${message}`,
+                    room: crush.chatRoom,
+                    isGroup: false
+                });
+
+                io.to(crush.chatRoom).emit('receive_message', {
+                    _id: newMessage._id,
+                    senderId: senderId,
+                    content: newMessage.content,
+                    room: crush.chatRoom,
+                    createdAt: newMessage.createdAt
+                });
+            }
+
+            await crush.save();
+            await crush.populate('receiver', 'name profilePhoto');
+
+            return res.json({ 
+                message: (!isOriginalSender && !wasMatch) ? "It's a Match! ✨ Go check your Crush Wall." : "Interaction updated!",
+                type: 'chat',
+                crush 
+            });
+        }
+
+        // 2. NEW CRUSH
+        const newCrush = await Crush.create({
+            sender: senderId,
+            receiver: receiverId,
+            message,
+            revealedToReceiver: true, 
+            revealedToSender: false,
+            isAnonymous: false,
+            chatRoom: roomID
+        });
+
+        // Create the initial message records
+        // First: the context message
+        await Message.create({
+            sender: receiverId, // Confession author is the "owner" of this content
+            content: `[ORIGINAL CONFESSION]: ${confession.content}`,
+            room: roomID,
+            isGroup: false
+        });
+
+        // Second: the sender's actual crush message
+        const initialMsg = await Message.create({
+            sender: senderId,
+            content: message,
+            room: roomID,
+            isGroup: false
+        });
+
+        await newCrush.populate('receiver', 'name profilePhoto');
+
+        res.status(201).json({ 
+            message: 'Crush manifested! Your name has been revealed to them. ✨',
+            crush: newCrush 
+        });
+    } catch (error: any) {
+        console.error('CRUSH ERROR:', error.message);
+        res.status(500).json({ message: 'Error sending crush' });
     }
 };

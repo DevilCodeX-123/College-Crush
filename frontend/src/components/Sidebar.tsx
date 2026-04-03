@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 
 
 
-const Sidebar = () => {
+const Sidebar = ({ isSurpriseActive }: { isSurpriseActive?: boolean }) => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
@@ -28,7 +28,7 @@ const Sidebar = () => {
         { icon: Zap, label: 'Shadow Match', path: '/match' },
         { icon: Star, label: 'Elite Circle', path: '/friends' },
         { icon: Award, label: 'Leaderboard', path: '/leaderboard' },
-        { icon: QrCode, label: 'See Surprise', path: '/qr-reveal' },
+        ...(isSurpriseActive ? [{ icon: QrCode, label: 'See Surprise', path: '/qr-reveal' }] : []),
     ];
 
 
@@ -163,7 +163,7 @@ const Sidebar = () => {
             </aside>
 
             {/* Desktop sidebar (always visible) */}
-            <aside className="hidden md:flex w-64 border-r border-white/5 bg-white/[0.02] backdrop-blur-3xl flex-col p-6 fixed h-full z-20">
+            <aside className="hidden md:flex w-64 border-r border-white/5 bg-white/[0.02] backdrop-blur-xl flex-col p-6 fixed h-full z-20">
                 <SidebarContent />
             </aside>
         </>
