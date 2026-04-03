@@ -11,6 +11,8 @@ import chatRoutes from './routes/chatRoutes.js';
 import messageRoutes from './routes/messageRoutes.js';
 import systemRoutes from './routes/systemRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
+import qrRoutes from './routes/qrRoutes.js';
+
 import Message from './models/Message.js';
 import User from './models/User.js';
 import jwt from 'jsonwebtoken';
@@ -41,6 +43,8 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/system', systemRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/qr', qrRoutes);
+
 
 // Basic Route
 app.get('/', (req: express.Request, res: express.Response) => {

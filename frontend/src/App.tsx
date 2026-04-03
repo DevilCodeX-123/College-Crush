@@ -17,7 +17,9 @@ import Leaderboard from './pages/Leaderboard';
 import AdminDashboard from './pages/AdminDashboard';
 import Friends from './pages/Friends';
 import Confessions from './pages/Confessions';
+import QRRevealPage from './pages/QRRevealPage';
 import Layout from './components/Layout';
+
 import { Toaster } from './components/ui/toaster';
 
 const queryClient = new QueryClient();
@@ -36,24 +38,58 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   return <Layout>{children}</Layout>;
 };
 
+import { useState, useEffect } from 'react';
+import api from './lib/api';
+
 function App() {
+  const [qrSettings, setQrSettings] = useState<any>(null);
+  const [fetchingSettings, setFetchingSettings] = useState(true);
+
+  useEffect(() => {
+    const fetchQrStatus = async () => {
+      try {
+        const { data } = await api.get('/qr/settings');
+        setQrSettings(data);
+      } catch (error) {
+        console.error('Failed to fetch QR settings');
+      } finally {
+        setFetchingSettings(false);
+      }
+    };
+    fetchQrStatus();
+  }, []);
+
+  if (fetchingSettings) return <div className="min-h-screen bg-[#0a0a0c] flex items-center justify-center text-blue-500 font-black">COLLEGE CRUSH...</div>;
+
+  const isSurpriseActive = qrSettings?.settings?.isActive;
+
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <Router>
           <div className="min-h-screen bg-transparent">
             <Routes>
-              <Route path="/" element={<LandingPage />} />
+              {/* Dynamic Root Route */}
+              <Route 
+                path="/" 
+                element={isSurpriseActive ? <Layout><QRRevealPage /></Layout> : <LandingPage />} 
+              />
+              
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
+              <Route path="/qr-reveal" element={<Layout><QRRevealPage /></Layout>} />
+
+
+
               <Route
                 path="/dashboard"
                 element={
                   <ProtectedRoute>
-                    <Dashboard />
+                    {isSurpriseActive ? <QRRevealPage /> : <Dashboard />}
                   </ProtectedRoute>
                 }
               />
+
               <Route
                 path="/profile"
                 element={
@@ -166,6 +202,15 @@ function App() {
                   </AdminRoute>
                 }
               />
+              <Route
+                path="/admin/qr"
+                element={
+                  <AdminRoute>
+                    <AdminDashboard initialTab="qr" />
+                  </AdminRoute>
+                }
+              />
+
             </Routes>
           </div>
         </Router>

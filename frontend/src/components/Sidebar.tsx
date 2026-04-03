@@ -1,13 +1,16 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Heart, MessageSquare, Users, Award, User, Zap, Star, Activity, Flag, Speaker, Menu, X, Instagram } from 'lucide-react';
+import { Heart, MessageSquare, Users, Award, User, Zap, Star, Activity, Flag, Speaker, Menu, X, Instagram, QrCode } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+
+
 
 const Sidebar = () => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
     const [open, setOpen] = useState(false);
+
 
     const themeMap: Record<string, any> = {
         male: { activeBtn: 'bg-blue-600/20 text-white border border-white/10', icon: 'text-blue-500' },
@@ -17,6 +20,7 @@ const Sidebar = () => {
 
     const theme = themeMap[user?.gender?.toLowerCase()] || themeMap.other;
 
+
     const userNavItems = [
         { icon: MessageSquare, label: 'Confessions', path: '/confessions' },
         { icon: Heart, label: 'Crushes', path: '/crushes' },
@@ -24,7 +28,10 @@ const Sidebar = () => {
         { icon: Zap, label: 'Shadow Match', path: '/match' },
         { icon: Star, label: 'Elite Circle', path: '/friends' },
         { icon: Award, label: 'Leaderboard', path: '/leaderboard' },
+        { icon: QrCode, label: 'See Surprise', path: '/qr-reveal' },
     ];
+
+
 
     const adminNavItems = user?.role === 'admin' ? [
         { icon: Activity, label: 'Admin Overview', path: '/admin' },
@@ -32,7 +39,9 @@ const Sidebar = () => {
         { icon: Flag, label: 'Reports & Logs', path: '/admin/reports' },
         { icon: MessageSquare, label: 'Rooms Setup', path: '/admin/rooms' },
         { icon: Speaker, label: 'Ads Setup', path: '/admin/ads' },
+        { icon: QrCode, label: 'QR Settings', path: '/admin/qr' },
     ] : [];
+
 
     const goTo = (path: string) => {
         navigate(path);
@@ -86,6 +95,7 @@ const Sidebar = () => {
                         </div>
                     </>
                 )}
+
             </nav>
 
             {/* Logout */}

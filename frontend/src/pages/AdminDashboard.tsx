@@ -3,6 +3,8 @@ import { Card } from '../components/ui/card';
 import { ShieldAlert, Users, MessageSquare, Plus, Globe, Lock, Flag, Loader2, XCircle, Speaker, Activity } from 'lucide-react';
 import api from '../lib/api';
 import UserAvatar from '../components/UserAvatar';
+import AdminQRRevealTab from '../components/admin/AdminQRRevealTab';
+
 
 const AdminDashboard = ({ initialTab = 'overview' }: { initialTab?: string }) => {
     const [activeTab, setActiveTab] = useState(initialTab);
@@ -690,6 +692,10 @@ const AdminDashboard = ({ initialTab = 'overview' }: { initialTab?: string }) =>
                         </div>
                     </div>
                 )}
+
+                {/* 7. QR REVEAL TAB */}
+                {activeTab === 'qr' && <AdminQRRevealTab />}
+
             </main>
         </div>
     );
