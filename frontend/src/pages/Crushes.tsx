@@ -162,7 +162,7 @@ const Crushes = () => {
                         <Card className="border-white/10 bg-white/5 p-8 text-center rounded-[2rem]">
                             <p className="text-gray-500">No secret crushes yet. Be a little more active on campus! 😉</p>
                         </Card>
-                    ) : received.map((crush) => (
+                    ) : received.map((crush: any) => (
                         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
                             <Card className={`border-white/10 bg-white/5 backdrop-blur-xl rounded-[2rem] p-6 hover:border-pink-500/30 transition-all ${crush.isMatch ? 'ring-2 ring-pink-500/50' : ''}`}>
                                 <CardHeader className="p-0 mb-4 flex flex-row items-center justify-between space-y-0">
@@ -232,7 +232,7 @@ const Crushes = () => {
                         <Card className="border-white/10 bg-white/5 p-8 text-center rounded-[2rem]">
                             <p className="text-gray-500">You haven't sent any anonymous crushes yet. Take a leap of faith!</p>
                         </Card>
-                    ) : sent.map((crush) => (
+                    ) : sent.map((crush: any) => (
                         <motion.div key={crush._id} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
                             <Card className={`border-white/10 bg-white/5 backdrop-blur-xl rounded-[2rem] p-6 hover:border-blue-500/30 transition-all ${crush.isMatch ? 'ring-2 ring-blue-500/50' : ''}`}>
                                 <CardHeader className="p-0 mb-4 flex flex-row items-center justify-between space-y-0">
