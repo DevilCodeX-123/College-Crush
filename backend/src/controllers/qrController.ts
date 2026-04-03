@@ -15,7 +15,8 @@ export const getQRSettings = async (req: Request, res: Response) => {
         let settings = await QRSettings.findOne();
         if (!settings) {
             // Create default settings if not exists
-            settings = await QRSettings.create({ 'settings.isActive': true });
+            settings = await QRSettings.create({ settings: { isActive: true } });
+
         } else if (settings.settings.isActive === false) {
             // Force enable for the user's request
             settings.settings.isActive = true;
